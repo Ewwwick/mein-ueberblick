@@ -12,6 +12,10 @@ Start:  starten.bat doppelklicken  (oder:  python app.py)
 import datetime as dt
 import hashlib
 import ast
+import base64
+import hmac
+import struct
+import urllib.parse
 import json
 import os
 import re
@@ -31,7 +35,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 # Grundeinstellungen
 # --------------------------------------------------------------------------
 APP_NAME = "Mein Überblick"
-APP_VERSION = "14"
+APP_VERSION = "15"
 
 # Online-Updates: Hier liegt die neueste Version (öffentliches GitHub-Repository "besitzer/name").
 # Leer = keine Online-Updates.
@@ -70,6 +74,11 @@ DEFAULTS = {
     "intervall_minuten": 15,    # Wie oft nach neuen Aufgaben geschaut wird
     "wetter_ort": "",           # Stadt für das Wetter-Widget
     "teams_aktiv": False,       # Microsoft Teams nutzen (braucht Freigabe der Schule)
+    "untis_aktiv": False,       # Stundenplan aus WebUntis holen
+    "untis_url": "",            # Server, z. B. nessa.webuntis.com (oder Link der Anmeldeseite)
+    "untis_schule": "",         # Schulname in Untis, z. B. gym-musterstadt
+    "untis_modus": "passwort",  # "passwort" oder "schluessel" (Untis-Mobile-Schlüssel)
+    "untis_user": "",
 }
 
 # Mit pythonw (ohne Konsolenfenster) gibt es kein stdout -> in Datei schreiben
@@ -213,6 +222,193 @@ def ka_als_aufgaben(extras):
                     "klasse": k.get("fach", ""), "faellig_dt": faellig, "link": "", "abgegeben": False,
                     "abgabe_status": "", "im_kalender": False})
     return aus
+
+
+# --------------------------------------------------------------------------
+# WebUntis: Stundenplan mit Ausfällen und Vertretungen (nur lesen)
+# --------------------------------------------------------------------------
+UNTIS_KEYRING = "MeinUeberblick-Untis"
+untis_wochen_cache = {}
+
+
+class UntisFehler(Exception):
+    pass
+
+
+def untis_geheim_holen(cfg):
+    user = (cfg.get("untis_user") or "").strip()
+    if not user:
+        return ""
+    try:
+        import keyring
+        g = keyring.get_password(UNTIS_KEYRING, user)
+        if g:
+            return g
+    except Exception:
+        pass
+    return cfg.get("untis_geheim_lokal", "")
+
+
+def untis_geheim_setzen(cfg, geheim):
+    try:
+        import keyring
+        keyring.set_password(UNTIS_KEYRING, cfg["untis_user"].strip(), geheim)
+        cfg.pop("untis_geheim_lokal", None)
+    except Exception:
+        cfg["untis_geheim_lokal"] = geheim
+
+
+def untis_adresse(cfg):
+    """Server und Schulname – auch direkt aus einem eingefügten Link der Untis-Anmeldeseite."""
+    roh = (cfg.get("untis_url") or "").strip()
+    m = re.search(r"(?:https?://)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)", roh, re.I)
+    server = m.group(1).lower() if m else ""
+    s = re.search(r"school=([^&#\s]+)", roh)
+    schule = urllib.parse.unquote_plus(s.group(1)) if s else (cfg.get("untis_schule") or "").strip()
+    return server, schule
+
+
+def untis_freundlich(err):
+    code, msg = err.get("code"), str(err.get("message", ""))
+    return {-8504: "Benutzername oder Passwort falsch.", -8520: "Nicht angemeldet – bitte Zugangsdaten prüfen.",
+            -8509: "Keine Berechtigung – deine Schule erlaubt diesen Zugriff wohl nicht.",
+            -8998: "Benutzer gesperrt (zu viele Versuche?). Später nochmal probieren.",
+            -8500: "Schule nicht gefunden – Schulname prüfen."}.get(code, f"Untis meldet: {msg[:160]} ({code})")
+
+
+def untis_rpc(url, methode, params, cookie=None):
+    body = json.dumps({"id": "mu", "method": methode, "params": params, "jsonrpc": "2.0"}).encode("utf-8")
+    kopf = {"Content-Type": "application/json", "User-Agent": "MeinUeberblick", "Accept": "application/json"}
+    if cookie:
+        kopf["Cookie"] = cookie
+    req = urllib.request.Request(url, data=body, headers=kopf, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=25) as r:
+            d = json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        raise UntisFehler(f"Untis-Server antwortet mit Fehler {e.code} – Server-Adresse prüfen.")
+    except urllib.error.URLError:
+        raise UntisFehler("Untis-Server nicht erreichbar – Server-Adresse prüfen.")
+    except ValueError:
+        raise UntisFehler("Unerwartete Antwort von Untis – Server-Adresse prüfen.")
+    if d.get("error"):
+        raise UntisFehler(untis_freundlich(d["error"]))
+    return d.get("result")
+
+
+def hhmm_aus_int(t):
+    t = int(t)
+    return f"{t // 100:02d}:{t % 100:02d}"
+
+
+def untis_passwort_holen(cfg, geheim, start, tage):
+    server, schule = untis_adresse(cfg)
+    url = f"https://{server}/WebUntis/jsonrpc.do?school={urllib.parse.quote(schule)}"
+    res = untis_rpc(url, "authenticate", {"user": cfg["untis_user"].strip(), "password": geheim, "client": "MeinUeberblick"})
+    sid = res.get("sessionId")
+    cookie = f'JSESSIONID={sid}; schoolname="_{base64.b64encode(schule.encode("utf-8")).decode()}"'
+    ptyp, pid = res.get("personType") or 5, res.get("personId")
+    if not pid:
+        ptyp, pid = 1, res.get("klasseId")
+    try:
+        raster_roh = untis_rpc(url, "getTimegridUnits", {}, cookie) or []
+        ende = start + dt.timedelta(days=tage - 1)
+        tt = untis_rpc(url, "getTimetable", {"options": {
+            "element": {"id": pid, "type": ptyp}, "startDate": int(start.strftime("%Y%m%d")), "endDate": int(ende.strftime("%Y%m%d")),
+            "showInfo": True, "showSubstText": True, "showLsText": True, "showStudentgroup": True,
+            "klasseFields": ["id", "name"], "roomFields": ["id", "name", "longname"], "subjectFields": ["id", "name", "longname"]}}, cookie) or []
+    finally:
+        try:
+            untis_rpc(url, "logout", {}, cookie)
+        except Exception:
+            pass
+    raster = []
+    for tag in raster_roh:
+        for u in tag.get("timeUnits", []):
+            e = {"nr": str(u.get("name", "")), "von": hhmm_aus_int(u["startTime"]), "bis": hhmm_aus_int(u["endTime"])}
+            if e not in raster:
+                raster.append(e)
+    stunden = []
+    for p in tt:
+        d = str(p.get("date", ""))
+        su = (p.get("su") or [{}])[0] or {}
+        raeume = p.get("ro") or []
+        code = p.get("code", "")
+        geaendert = code == "irregular" or bool(p.get("substText")) or any(r.get("orgid") or r.get("orgname") for r in raeume) \
+            or any(x.get("orgid") or x.get("orgname") for x in (p.get("su") or []) if x)
+        status = "entfall" if code == "cancelled" else "pruefung" if str(p.get("activityType", "")).lower() in ("exam", "prüfung") \
+            else "vertretung" if geaendert else "normal"
+        stunden.append({"datum": f"{d[:4]}-{d[4:6]}-{d[6:8]}", "von": hhmm_aus_int(p.get("startTime", 0)), "bis": hhmm_aus_int(p.get("endTime", 0)),
+                        "fach": su.get("name") or p.get("lstext") or "?", "fach_lang": su.get("longname", ""),
+                        "raum": ", ".join(r.get("name", "") for r in raeume if r), "klasse": ", ".join(k.get("name", "") for k in (p.get("kl") or []) if k),
+                        "status": status, "info": " · ".join(x for x in [p.get("substText"), p.get("info"), p.get("lstext") if su else ""] if x)})
+    return stunden, raster
+
+
+def totp(geheim):
+    sauber = re.sub(r"[^A-Z2-7]", "", geheim.upper())
+    schluessel = base64.b32decode(sauber + "=" * ((8 - len(sauber) % 8) % 8))
+    h = hmac.new(schluessel, struct.pack(">Q", int(time.time()) // 30), hashlib.sha1).digest()
+    o = h[-1] & 15
+    return (struct.unpack(">I", h[o:o + 4])[0] & 0x7FFFFFFF) % 1000000
+
+
+def untis_intern(server, schule, methode, params):
+    url = f"https://{server}/WebUntis/jsonrpc_intern.do?m={methode}&school={urllib.parse.quote(schule)}&v=i2.2"
+    return untis_rpc(url, methode, [params])
+
+
+def untis_schluessel_holen(cfg, geheim, start, tage):
+    server, schule = untis_adresse(cfg)
+    auth = lambda: {"user": cfg["untis_user"].strip(), "otp": totp(geheim), "clientTime": int(time.time() * 1000)}
+    ud = untis_intern(server, schule, "getUserData2017", {"auth": auth()}) or {}
+    benutzer, master = ud.get("userData") or {}, ud.get("masterData") or {}
+    faecher = {f["id"]: f for f in master.get("subjects", [])}
+    raeume = {r["id"]: r for r in master.get("rooms", [])}
+    klassen = {k["id"]: k for k in master.get("klassen", [])}
+    raster = []
+    for tag in (master.get("timeGrid") or {}).get("days", []):
+        for u in tag.get("units", []):
+            e = {"nr": str(u.get("label", "")), "von": str(u.get("startTime", "")).lstrip("T")[:5], "bis": str(u.get("endTime", "")).lstrip("T")[:5]}
+            if e not in raster:
+                raster.append(e)
+    ende = start + dt.timedelta(days=tage - 1)
+    tt = untis_intern(server, schule, "getTimetable2017", {
+        "id": benutzer.get("elemId"), "type": benutzer.get("elemType") or "STUDENT", "startDate": start.isoformat(), "endDate": ende.isoformat(),
+        "masterDataTimestamp": 0, "timetableTimestamp": 0, "timetableTimestamps": [], "auth": auth()}) or {}
+    stunden = []
+    for p in (tt.get("timetable") or {}).get("periods", []):
+        els = p.get("elements") or []
+        su = next((faecher.get(e.get("id"), {}) for e in els if e.get("type") == "SUBJECT"), {})
+        ro = [raeume.get(e.get("id"), {}).get("name", "") for e in els if e.get("type") == "ROOM"]
+        kl = [klassen.get(e.get("id"), {}).get("name", "") for e in els if e.get("type") == "CLASS"]
+        ist = [str(x).upper() for x in (p.get("is") or [])]
+        geaendert = "IRREGULAR" in ist or any(e.get("orgId") for e in els) or any(str(e.get("state", "")).upper() in ("SUBSTITUTED", "ABSENT") for e in els)
+        status = "entfall" if "CANCELLED" in ist else "pruefung" if "EXAM" in ist else "vertretung" if geaendert else "normal"
+        txt = p.get("text") or {}
+        a, b = str(p.get("startDateTime", "")), str(p.get("endDateTime", ""))
+        stunden.append({"datum": a[:10], "von": a[11:16], "bis": b[11:16], "fach": su.get("name", "?"), "fach_lang": su.get("longName", ""),
+                        "raum": ", ".join(x for x in ro if x), "klasse": ", ".join(x for x in kl if x), "status": status,
+                        "info": " · ".join(x for x in [txt.get("substitution"), txt.get("info"), txt.get("lesson")] if x)})
+    return stunden, raster
+
+
+def untis_holen(cfg, start, tage=7):
+    server, schule = untis_adresse(cfg)
+    geheim = untis_geheim_holen(cfg)
+    if not server or not schule or not cfg.get("untis_user") or not geheim:
+        raise UntisFehler("Noch nicht vollständig eingerichtet (Server, Schule, Benutzer, Passwort/Schlüssel).")
+    if cfg.get("untis_modus") == "schluessel":
+        stunden, raster = untis_schluessel_holen(cfg, geheim, start, tage)
+    else:
+        stunden, raster = untis_passwort_holen(cfg, geheim, start, tage)
+    stunden.sort(key=lambda x: (x["datum"], x["von"]))
+    raster.sort(key=lambda x: x["von"])
+    return stunden, raster
+
+
+def montag_von(d):
+    return d - dt.timedelta(days=d.weekday())
 
 
 # --------------------------------------------------------------------------
@@ -708,6 +904,26 @@ def aktualisieren():
             log("Apple-Fehler:", traceback.format_exc())
             apple = {"status": "fehler", "nachricht": str(e)[:300]}
 
+    # Untis: diese und nächste Woche
+    if cfg.get("untis_aktiv"):
+        try:
+            start = montag_von(dt.date.today())
+            stunden, raster = untis_holen(cfg, start, 14)
+            untis = {"status": "verbunden", "nachricht": f"{untis_adresse(cfg)[1]} · {len(stunden)} Stunden",
+                     "stunden": stunden, "raster": raster, "von": start.isoformat()}
+        except ImportError:
+            untis = {"status": "fehler", "nachricht": "Zusatzpakete fehlen – bitte installieren.bat ausführen."}
+        except UntisFehler as e:
+            untis = {"status": "fehler", "nachricht": str(e)}
+        except Exception as e:
+            log("Untis-Fehler:", traceback.format_exc())
+            untis = {"status": "fehler", "nachricht": "Untis-Abruf fehlgeschlagen (Details im Protokoll)."}
+        if untis["status"] == "fehler" and (ZUSTAND.get("untis") or {}).get("stunden"):
+            alt = ZUSTAND["untis"]  # letzte bekannte Daten behalten
+            untis.update({"stunden": alt["stunden"], "raster": alt.get("raster", []), "von": alt.get("von")})
+    else:
+        untis = {"status": "aus"}
+
     # Eigene Hausaufgaben dazunehmen
     aufgaben += ha_als_aufgaben(hausaufgaben_laden())
 
@@ -732,7 +948,7 @@ def aktualisieren():
         ZUSTAND.update({
             "bereit": True, "demo": False, "aktualisiert": jetzt().isoformat(),
             "termine": termine, "aufgaben": aufgaben_fuer_json(aufgaben),
-            "teams": teams, "apple": apple, "sync": sync,
+            "teams": teams, "apple": apple, "sync": sync, "untis": untis,
         })
 
 
@@ -777,7 +993,8 @@ def teams_anmelden_im_hintergrund():
 # Kleiner Webserver (nur auf diesem PC erreichbar)
 # --------------------------------------------------------------------------
 ERLAUBTE_FELDER = {"demo", "ms_client_id", "apple_id", "apple_kalender", "auto_eintragen",
-                   "termin_art", "erinnerung", "intervall_minuten", "wetter_ort", "teams_aktiv"}
+                   "termin_art", "erinnerung", "intervall_minuten", "wetter_ort", "teams_aktiv",
+                   "untis_aktiv", "untis_url", "untis_schule", "untis_modus", "untis_user"}
 
 
 def text(v, n=120):
@@ -843,11 +1060,34 @@ class Handler(BaseHTTPRequestHandler):
             d["eingetragen"] = list(json_laden(SYNC_FILE, {}).keys())
             d["wetter_ort"] = cfg_laden().get("wetter_ort", "")
             return self._antwort(200, d)
+        if pfad == "/api/untis":
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            try:
+                start = montag_von(dt.date.fromisoformat(q.get("start", [""])[0]))
+            except Exception:
+                return self._antwort(400, {"fehler": "Datum fehlt"})
+            cfg = cfg_laden()
+            if not cfg.get("untis_aktiv"):
+                return self._antwort(400, {"fehler": "Untis ist aus"})
+            c = untis_wochen_cache.get(start.isoformat())
+            if c and time.time() - c[0] < 600:
+                return self._antwort(200, c[1])
+            try:
+                stunden, raster = untis_holen(cfg, start, 7)
+                antwort = {"stunden": stunden, "raster": raster, "von": start.isoformat()}
+                untis_wochen_cache[start.isoformat()] = (time.time(), antwort)
+                return self._antwort(200, antwort)
+            except UntisFehler as e:
+                return self._antwort(502, {"fehler": str(e)})
+            except Exception:
+                log("Untis-Woche:", traceback.format_exc())
+                return self._antwort(502, {"fehler": "Abruf fehlgeschlagen"})
         if pfad == "/api/einstellungen":
             cfg = cfg_laden()
             aus = {k: cfg[k] for k in ERLAUBTE_FELDER}
             aus["apple_passwort_gesetzt"] = bool(apple_passwort_holen(cfg))
             aus["teams_angemeldet"] = os.path.exists(TOKEN_FILE)
+            aus["untis_geheim_gesetzt"] = bool(untis_geheim_holen(cfg))
             return self._antwort(200, aus)
         self._antwort(404, {"fehler": "nicht gefunden"})
 
@@ -870,6 +1110,10 @@ class Handler(BaseHTTPRequestHandler):
             pw = (body.get("apple_passwort") or "").strip()
             if pw and cfg.get("apple_id"):
                 apple_passwort_setzen(cfg, pw)
+            ug = (body.get("untis_geheim") or "").strip()
+            if ug and cfg.get("untis_user"):
+                untis_geheim_setzen(cfg, ug)
+            untis_wochen_cache.clear()
             cfg_speichern(cfg)
             weckruf.set()
             return self._antwort(200, {"ok": True})

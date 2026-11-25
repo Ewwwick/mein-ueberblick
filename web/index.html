@@ -625,6 +625,16 @@ html[data-theme="dark"] body.glass .pmenu{background:rgba(40,40,46,.82)}
 .pmenu button:hover{background:var(--fill)}
 .pmenu button .ck{width:16px;color:var(--blue);display:grid;place-items:center}
 .pmenu button.on{font-weight:600}
+
+/* ===== Untis ===== */
+.chip.u-entfall b{text-decoration:line-through;text-decoration-thickness:2px}
+.chip.u-entfall,.chip.u-vertretung,.chip.u-pruefung{box-shadow:inset 0 0 0 1.5px currentColor}
+.chip.now{box-shadow:0 0 0 2.5px var(--red)}
+.tt .c .chip + .chip{margin-top:4px}
+.tt .c .chip{cursor:pointer}
+.u-legende{display:flex;gap:18px;justify-content:center;font-size:13px;color:var(--label2);margin-top:12px;flex-wrap:wrap}
+.u-legende i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.lesson-now.strike{text-decoration:line-through;opacity:.7}
 </style>
 </head>
 <body class="glass" data-wall="ocean">
@@ -714,6 +724,27 @@ html[data-theme="dark"] body.glass .pmenu{background:rgba(40,40,46,.82)}
       </div>
       <div class="sec-foot">Die Client-ID bekommst du in <b>Schritt 5</b> der ANLEITUNG.txt. Speichere zuerst mit „Fertig“, dann anmelden.</div>
       </div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head">Untis (Stundenplan)</div>
+      <div class="list">
+        <div class="field"><label>Untis verwenden</label><div class="grow"></div>
+          <label class="switch" style="width:51px"><input type="checkbox" id="fUntis"><span></span></label></div>
+      </div>
+      <div id="untisBox" style="margin-top:10px">
+        <div class="list">
+          <div class="field"><label>Server</label><input type="text" id="fUntisUrl" placeholder="Link einfügen oder z. B. nessa.webuntis.com" spellcheck="false" autocomplete="off"></div>
+          <div class="field"><label>Schule</label><input type="text" id="fUntisSchule" placeholder="z. B. gym-musterstadt" spellcheck="false" autocomplete="off"></div>
+          <div class="field"><label>Anmeldung</label><div class="grow"></div>
+            <div class="seg small" id="fUntisModus"><div class="thumb"></div><button data-v="passwort">Passwort</button><button data-v="schluessel">Untis-Mobile-Schlüssel</button></div></div>
+          <div class="field"><label>Benutzername</label><input type="text" id="fUntisUser" spellcheck="false" autocomplete="off"></div>
+          <div class="field"><label id="fUntisPwLabel">Passwort</label><input type="password" id="fUntisPw" autocomplete="new-password"></div>
+          <div class="field"><label>Status</label><div class="state-line" id="untisState">–</div></div>
+        </div>
+        <div class="sec-foot" id="untisHilfe"></div>
+      </div>
+      <div class="sec-foot" id="untisAusText">Holt deinen Stundenplan mit Ausfällen und Vertretungen aus WebUntis (nur lesen).</div>
     </div>
 
     <div class="section">
@@ -869,11 +900,12 @@ function renderBanner(){
     html = `<div class="banner fade-in"><div class="ico" style="background:var(--orange)">${ICON.info}</div>
       <div class="txt"><b>Demo-Modus.</b> Das sind Beispieldaten. Verbinde deinen Apple-Kalender in den Einstellungen.</div>
       <button class="link-btn" onclick="openSheet()">Einrichten</button></div>`;
-  } else if (D && ((D.teams.status !== 'verbunden' && D.teams.status !== 'aus') || D.apple.status !== 'verbunden')) {
+  } else if (D && ((D.teams.status !== 'verbunden' && D.teams.status !== 'aus') || D.apple.status !== 'verbunden' || D.untis?.status === 'fehler')) {
     const p = [];
+    if (D.untis?.status === 'fehler') p.push(`<b>Untis:</b> ${esc(D.untis.nachricht)}`);
     if (D.teams.status !== 'verbunden' && D.teams.status !== 'aus') p.push(`<b>Teams:</b> ${esc(D.teams.nachricht)}`);
     if (D.apple.status !== 'verbunden') p.push(`<b>Apple Kalender:</b> ${esc(D.apple.nachricht)}`);
-    const bad = [D.teams.status, D.apple.status].includes('fehler');
+    const bad = [D.teams.status, D.apple.status, D.untis?.status].includes('fehler');
     html = `<div class="banner fade-in"><div class="ico" style="background:var(${bad?'--red':'--blue'})">${ICON.info}</div>
       <div class="txt">${p.join('<br>')}</div><button class="link-btn" onclick="openSheet()">Einstellungen</button></div>`;
   }
@@ -933,10 +965,11 @@ function renderUebersicht(){
     const d = addDays(startOfDay(now), i);
     let t = termineAm(d); if (i === 0) t = t.filter(e => e.ganztags || new Date(e.ende) > now);
     const a = aufgabenAm(d), ka = D.extras ? kaAm(d) : [], st = D.extras ? schritteAm(d) : [];
-    if (!t.length && !a.length && !ka.length && !st.length) continue;
+    let uc = untisAenderungenAm(d); if (i === 0) uc = uc.filter(l => zuDate(l.bis) > now);
+    if (!t.length && !a.length && !ka.length && !st.length && !uc.length) continue;
     any = true;
     html += `<div class="section"><div class="sec-head"><span>${dayLabel(d)}</span><span>${d.toLocaleDateString(DE,{day:'numeric',month:'long'})}</span></div>
-      <div class="list">${ka.map(kaRow).join('')}${a.map(x=>aufgabeRow(x)).join('')}${st.map(schrittRow).join('')}${t.map(terminRow).join('')}</div></div>`;
+      <div class="list">${uc.map(untisRow).join('')}${ka.map(kaRow).join('')}${a.map(x=>aufgabeRow(x)).join('')}${st.map(schrittRow).join('')}${t.map(terminRow).join('')}</div></div>`;
   }
   if (!any && !ueberfaellig.length) html += emptyBox('🌤️', 'Nichts geplant', 'Die nächsten 7 Tage sind frei.');
 
@@ -1063,15 +1096,25 @@ async function openSheet(){
   $('#fRem').value = S.erinnerung; $('#fInt').value = String(S.intervall_minuten);
   artValue = S.termin_art || 'ganztags'; $('#fOrt').value = S.wetter_ort || '';
   $('#fTeams').checked = !!S.teams_aktiv; teamsBoxZeigen();
+  $('#fUntis').checked = !!S.untis_aktiv; $('#fUntisUrl').value = S.untis_url || ''; $('#fUntisSchule').value = S.untis_schule || '';
+  $('#fUntisUser').value = S.untis_user || ''; $('#fUntisPw').value = ''; untisModus = S.untis_modus || 'passwort'; untisBoxZeigen();
+  $('#untisAusText').style.display = S.untis_aktiv ? 'none' : '';
   $('#dim').classList.add('open'); $('#sheet').classList.add('open'); sheetOpen = true;
-  setTimeout(() => { initSeg($('#fArt'), artValue, v => artValue = v); designSteuerung(); }, 50);
+  setTimeout(() => { initSeg($('#fArt'), artValue, v => artValue = v); designSteuerung();
+    initSeg($('#fUntisModus'), untisModus, v => { untisModus = v; untisBoxZeigen(); }); }, 50);
   updateSheetStatus();
 }
 function teamsBoxZeigen(){ const an = $('#fTeams').checked; $('#teamsBox').style.display = an ? '' : 'none'; $('#teamsAusText').style.display = an ? 'none' : ''; }
 $('#fTeams').addEventListener('change', teamsBoxZeigen);
+$('#fUntis').addEventListener('change', () => { untisBoxZeigen(); $('#untisAusText').style.display = $('#fUntis').checked ? 'none' : '';
+  setTimeout(() => initSeg($('#fUntisModus'), untisModus, v => { untisModus = v; untisBoxZeigen(); }), 30); });
+$('#fUntisUrl').addEventListener('change', untisLinkLesen); $('#fUntisUrl').addEventListener('paste', () => setTimeout(untisLinkLesen, 30));
 function closeSheet(){ $('#dim').classList.remove('open'); $('#sheet').classList.remove('open'); sheetOpen = false; }
 function updateSheetStatus(){
   if (!D) return;
+  const u = D.untis || {status:'aus'};
+  const uStat = D.demo && u.status === 'aus' ? {status:'aus', nachricht:'Aus'} : u;
+  $('#untisState').innerHTML = `<span class="dot" style="background:${statusDot(uStat.status)}"></span><span style="white-space:normal">${esc(uStat.status === 'aus' ? 'Wird nach „Fertig“ verbunden …' : statusText(uStat))}</span>`;
   const an = D.anmeldung || {};
   const demoHinweis = {status:'demo', nachricht:'Demo-Modus an – oben ausschalten'};
   const tStat = an.laeuft ? {status:'anmelden', nachricht:'Anmeldung läuft im Browser …'} : an.fehler ? {status:'fehler', nachricht: an.fehler} : (D.demo ? demoHinweis : D.teams);
@@ -1084,7 +1127,10 @@ function updateSheetStatus(){
 async function speichern(still){
   const body = { demo: $('#fDemo').checked, ms_client_id: $('#fClient').value.trim(), apple_id: $('#fApple').value.trim(),
     apple_kalender: $('#fCal').value.trim() || 'Schule', auto_eintragen: $('#fAuto').checked, termin_art: artValue,
-    erinnerung: $('#fRem').value, intervall_minuten: Number($('#fInt').value), wetter_ort: $('#fOrt').value.trim(), teams_aktiv: $('#fTeams').checked };
+    erinnerung: $('#fRem').value, intervall_minuten: Number($('#fInt').value), wetter_ort: $('#fOrt').value.trim(), teams_aktiv: $('#fTeams').checked,
+    untis_aktiv: $('#fUntis').checked, untis_url: $('#fUntisUrl').value.trim(), untis_schule: $('#fUntisSchule').value.trim(),
+    untis_modus: untisModus, untis_user: $('#fUntisUser').value.trim() };
+  const ug = $('#fUntisPw').value.trim(); if (ug) { body.untis_geheim = ug; $('#fUntisPw').value = ''; S.untis_geheim_gesetzt = true; }
   const pw = $('#fPass').value.trim(); if (pw) body.apple_passwort = pw;
   if (pw && body.apple_id) { $('#fPass').value = ''; $('#fPass').placeholder = '•••••••• (gespeichert)'; }
   await post('/api/einstellungen', body);
@@ -1279,6 +1325,7 @@ async function haAktion(aktion, id){
 const WTAGE = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag'];
 const zuDate = (hm, base=new Date()) => { const [h,m] = hm.split(':').map(Number); const d = new Date(base); d.setHours(h,m,0,0); return d; };
 function stundeInfo(){
+  if (untisDaten()) return untisStundeInfo();
   const ex = D?.extras; if (!ex) return null;
   const now = new Date(), wd = (now.getDay()+6)%7+1;
   const leer = !Object.values(ex.plan).some(t => Object.keys(t).length);
@@ -1301,6 +1348,8 @@ function stundeInfo(){
   return {jetzt, danach};
 }
 function widgetStunde(){
+  if (untisAn() && !untisDaten() && D.untis.status === 'fehler') return `<div class="widget tap" onclick="setView('stundenplan')"><div class="w-head" style="color:var(--teal)">${ICON.clock} Stundenplan</div>
+    <div class="lesson-now" style="font-size:18px">Untis nicht erreichbar</div><div class="lesson-sub">${esc(D.untis.nachricht)}</div></div>`;
   const s = stundeInfo();
   const head = `<div class="w-head" style="color:var(--teal)">${ICON.clock} Stundenplan</div>`;
   if (!s || s.leer) return `<div class="widget tap fade-in" onclick="setView('stundenplan')">${head}
@@ -1314,17 +1363,31 @@ function widgetStunde(){
   if (j) {
     const pct = Math.min(100, Math.max(0, (new Date() - j.a) / (j.b - j.a) * 100));
     const rest = Math.max(1, Math.round((j.b - new Date()) / 6e4));
-    mitte = `<div class="lesson-sub">Jetzt · ${j.i+1}. Stunde</div><div class="lesson-now" style="color:${fachFarbe(j.fach)}">${esc(j.fach)}</div>
+    const st = UNTIS_STATUS[j.status] || UNTIS_STATUS.normal;
+    mitte = j.status === 'entfall'
+      ? `<div class="lesson-sub">Jetzt · ${stdLabel(j)}</div><div class="lesson-now strike" style="color:var(--red)">${esc(j.fach)}</div><div class="lesson-sub" style="color:var(--red);font-weight:600">🚫 Fällt aus – frei! 🎉</div>`
+      : `<div class="lesson-sub">Jetzt · ${stdLabel(j)}${st.txt ? ` · <b style="color:${st.farbe}">${st.txt}</b>` : ''}</div><div class="lesson-now" style="color:${st.farbe || fachFarbe(j.fach)}">${esc(j.fach)}</div>
       <div class="lesson-sub">${esc(j.raum || '')}${j.raum ? ' · ' : ''}noch ${rest} Min.</div><div class="progress"><i style="width:${pct}%"></i></div>`;
   } else {
     const bis = Math.round((d.a - new Date()) / 6e4);
-    mitte = `<div class="lesson-sub">${bis <= 20 ? 'Pause · gleich' : 'Als Nächstes'} · ${d.i+1}. Stunde</div><div class="lesson-now" style="color:${fachFarbe(d.fach)}">${esc(d.fach)}</div>
+    const st = UNTIS_STATUS[d.status] || UNTIS_STATUS.normal;
+    mitte = `<div class="lesson-sub">${bis <= 20 ? 'Pause · gleich' : 'Als Nächstes'} · ${stdLabel(d)}${st.txt ? ` · <b style="color:${st.farbe}">${st.txt}</b>` : ''}</div><div class="lesson-now" style="color:${st.farbe || fachFarbe(d.fach)}">${esc(d.fach)}</div>
       <div class="lesson-sub">${esc(d.raum || '')}${d.raum ? ' · ' : ''}um ${hhmm(d.a)} Uhr</div>`;
   }
-  const foot = j && d ? `Danach: <b style="color:var(--label)">${esc(d.fach)}</b> · ${hhmm(d.a)}` : j ? 'Danach: Schluss für heute ✌️' : '';
+  let foot = j && d ? `Danach: <b style="color:var(--label)">${esc(d.fach)}</b> · ${hhmm(d.a)}` : j ? 'Danach: Schluss für heute ✌️' : '';
+  if (s.aenderungen) foot = `<b style="color:var(--orange)">⚠️ Heute ${s.aenderungen} ${s.aenderungen === 1 ? 'Änderung' : 'Änderungen'}</b> · ` + foot;
   return `<div class="widget tap fade-in" onclick="setView('stundenplan')">${head}${mitte}<div class="w-foot">${foot}</div></div>`;
 }
 function renderStundenplan(){
+  if (!untisAn()) return renderEigenerPlan();
+  const seg = `<div class="toolbar"><div class="seg small" id="spSeg"><div class="thumb"></div><button data-v="untis">Untis</button><button data-v="eigen">Mein Plan</button></div>
+    <span class="lesson-sub">${D.untis.status === 'verbunden' ? '🟢 Live aus Untis' : D.untis.status === 'fehler' ? '🔴 ' + esc(D.untis.nachricht) : 'Verbinde …'}</span></div>`;
+  setTimeout(() => { const el = $('#spSeg'); if (el) initSeg(el, spQuelle, v => { spQuelle = v; render(); }); }, 0);
+  return `<div class="fade-in">${seg}${spQuelle === 'untis' ? (untisDaten() || untisOffset > 1 || untisOffset < 0 ? renderUntisWoche()
+    : D.untis.status === 'fehler' ? emptyBox('⚠️', 'Untis nicht verbunden', esc(D.untis.nachricht) + '<br><br><button class="add-btn" onclick="openSheet()">Einstellungen öffnen</button>')
+    : `<div class="empty">Lade Stundenplan aus Untis …</div>`) : renderEigenerPlan()}</div>`;
+}
+function renderEigenerPlan(){
   const ex = D.extras, now = new Date(), wd = (now.getDay()+6)%7+1;
   const s = stundeInfo(); const jetztI = s?.jetzt ? s.jetzt.i : -1;
   let html = `<div class="tt" style="grid-template-columns:78px repeat(5,1fr)"><div class="h"></div>
@@ -1555,6 +1618,7 @@ function sbBadge(v){
   if (v === 'klassenarbeiten') { const k = D?.extras ? kaKommend()[0] : null; return k ? tageBis(k.datum) + ' T' : ''; }
   if (v === 'noten') { const g = D?.extras ? gesamtSchnitt() : null; return g != null ? fmtSchnitt(g) : ''; }
   if (v === 'notizen') { const n = (D?.extras?.notizen || []).length; return n ? n : ''; }
+  if (v === 'stundenplan' && untisDaten()) { const n = untisTag(new Date()).filter(l => l.status !== 'normal' && zuDate(l.bis) > new Date()).length; return n ? n + ' ⚠️' : ''; }
   if (v === 'fokus' && fokus.laeuft) return fmt(Math.ceil(fokus.rest));
   if (v === 'countdowns') { const c = (D?.extras?.countdowns || []).filter(c => tageBis(c.datum) >= 0).sort((a,b) => a.datum.localeCompare(b.datum))[0]; return c ? tageBis(c.datum) + ' T' : ''; }
   if (v === 'wetter' && wetter?.f) return Math.round(wetter.f.current.temperature_2m) + '°';
@@ -1999,6 +2063,129 @@ function dragEinrichten(){
       box.insertBefore(zieh, vorher ? el : el.nextSibling);
     });
   });
+}
+
+// =====================================================================
+// 🏫 Untis – Stundenplan mit Ausfällen und Vertretungen
+// =====================================================================
+const untisAn = () => !!(D?.untis && D.untis.status !== 'aus');
+const untisDaten = () => !!(D?.untis?.stunden && D.untis.stunden.length);
+const UNTIS_STATUS = {
+  normal: {txt:'', farbe:null},
+  vertretung: {txt:'Vertretung', farbe:'var(--orange)', emo:'🔁'},
+  entfall: {txt:'Entfall', farbe:'var(--red)', emo:'🚫'},
+  pruefung: {txt:'Prüfung', farbe:'var(--purple)', emo:'📝'},
+};
+function untisTag(d){ const iso = isoTag(d); return (D.untis.stunden || []).filter(l => l.datum === iso).sort((a, b) => a.von.localeCompare(b.von)); }
+function untisNr(von){ return (D.untis.raster || []).findIndex(u => u.von === von); }
+function stdLabel(x){ return x.i >= 0 ? `${x.i + 1}. Stunde` : `${x.von} Uhr`; }
+function untisStundeInfo(){
+  const now = new Date(), wd = (now.getDay() + 6) % 7 + 1, heute = untisTag(now);
+  const morgenText = () => {
+    for (let i = 1; i <= 10; i++){ const d = addDays(now, i), t = untisTag(d).filter(l => l.status !== 'entfall');
+      if (t.length) return {tag: dayLabel(d), fach: t[0].fach, zeit: t[0].von}; }
+    return null; };
+  const aenderungen = heute.filter(l => l.status !== 'normal' && zuDate(l.bis) > now).length;
+  if (!heute.length) return {frei: wd > 5 ? 'Wochenende 🎉' : 'Heute kein Unterricht 🎉', naechste: morgenText()};
+  let jetzt = null, danach = null;
+  heute.forEach(l => {
+    const a = zuDate(l.von), b = zuDate(l.bis), x = {...l, fach: l.fach_lang || l.fach, i: untisNr(l.von), a, b};
+    if (now >= a && now < b) { if (!jetzt || jetzt.status === 'entfall') jetzt = x; }
+    else if (now < a && !danach && l.status !== 'entfall') danach = x;
+  });
+  if (!jetzt && !danach) return {frei: 'Schule aus ✌️', naechste: morgenText(), aenderungen};
+  return {jetzt, danach, aenderungen, untis: true};
+}
+// Änderungen eines Tages für die Übersicht
+function untisAenderungenAm(d){ return untisDaten() ? untisTag(d).filter(l => l.status !== 'normal') : []; }
+function untisRow(l){
+  const st = UNTIS_STATUS[l.status] || UNTIS_STATUS.vertretung, x = {...l, i: untisNr(l.von)};
+  return `<div class="row ind tap" onclick="setView('stundenplan')"><div class="icon-sq" style="background:${st.farbe};font-size:15px">${st.emo}</div>
+    <div class="r-main"><div class="r-title">${st.txt}: ${esc(l.fach_lang || l.fach)}</div>
+    <div class="r-sub">${stdLabel(x)}${l.raum ? ' · Raum ' + esc(l.raum) : ''}${l.info ? ' · ' + esc(l.info) : ''}</div></div>
+    <span class="pill" style="background:color-mix(in srgb,${st.farbe} 15%,transparent);color:${st.farbe}">${l.von}</span></div>`;
+}
+
+// Wochenansicht
+let spQuelle = 'untis', untisOffset = 0;
+const untisWochenCache = {};
+function untisWoche(offset){
+  const mon = addDays(mondayOf(new Date()), offset * 7), iso = isoTag(mon), bis = isoTag(addDays(mon, 7));
+  if ((offset === 0 || offset === 1) && untisDaten())
+    return {stunden: D.untis.stunden.filter(l => l.datum >= iso && l.datum < bis), raster: D.untis.raster || []};
+  if (untisWochenCache[iso]) return untisWochenCache[iso];
+  untisWochenCache[iso] = {laden: true};
+  fetch(`/api/untis?start=${iso}`).then(r => r.json()).then(j => { untisWochenCache[iso] = j.fehler ? {fehler: j.fehler} : j; if (view === 'stundenplan') render(); })
+    .catch(() => { untisWochenCache[iso] = {fehler: 'Nicht erreichbar'}; if (view === 'stundenplan') render(); });
+  return {laden: true};
+}
+function kw(d){ const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const n = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - n);
+  const j = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return Math.ceil(((t - j) / 864e5 + 1) / 7); }
+let untisLetzteWoche = [];
+function renderUntisWoche(){
+  const mon = addDays(mondayOf(new Date()), untisOffset * 7), tage = [...Array(5)].map((_, i) => addDays(mon, i)), heute = new Date();
+  const w = untisWoche(untisOffset);
+  const kopf = `<div class="cal-head"><div class="m">KW ${kw(mon)} <span style="color:var(--label2);font-weight:500;font-size:16px">${mon.toLocaleDateString(DE,{day:'numeric',month:'short'})} – ${addDays(mon,4).toLocaleDateString(DE,{day:'numeric',month:'short'})}</span></div>
+    <div class="cal-nav"><button class="today-btn" onclick="untisOffset=0;render()">Heute</button>
+    <button class="circle-btn" onclick="untisOffset--;render()">${ICON.left}</button><button class="circle-btn" onclick="untisOffset++;render()">${ICON.right}</button></div></div>`;
+  if (w.laden) return kopf + `<div class="empty">Lade Stundenplan aus Untis …</div>`;
+  if (w.fehler) return kopf + emptyBox('⚠️', 'Untis nicht erreichbar', esc(w.fehler));
+  let raster = w.raster && w.raster.length ? w.raster : [...new Map(w.stunden.map(l => [l.von, {nr: '', von: l.von, bis: l.bis}])).values()].sort((a, b) => a.von.localeCompare(b.von));
+  // nur Zeilen zeigen, in denen diese Woche auch etwas ist (plus Lücken dazwischen)
+  const belegt = raster.map(u => w.stunden.some(l => l.von <= u.von && u.von < l.bis));
+  const erste = belegt.indexOf(true), letzte = belegt.lastIndexOf(true);
+  if (erste >= 0) raster = raster.slice(erste, letzte + 1);
+  untisLetzteWoche = w.stunden;
+  let html = `<div class="tt" style="grid-template-columns:78px repeat(5,1fr)"><div class="h"></div>
+    ${tage.map(d => `<div class="h ${sameDay(d, heute) ? 'today' : ''}">${d.toLocaleDateString(DE,{weekday:'short'}).replace('.','')} <span style="font-weight:500">${d.getDate()}.</span></div>`).join('')}`;
+  raster.forEach((u, ri) => {
+    html += `<div class="nr"><b>${esc(u.nr || String(erste + ri + 1))}.</b>${u.von}<br>${u.bis}</div>`;
+    tage.forEach(d => {
+      const iso = isoTag(d), ls = w.stunden.filter(l => l.datum === iso && l.von <= u.von && u.von < l.bis);
+      const jetzt = sameDay(d, heute) && zuDate(u.von) <= heute && heute < zuDate(u.bis);
+      html += `<div class="c ${sameDay(d, heute) ? 'todaycol' : ''}">${ls.map(l => {
+        const st = UNTIS_STATUS[l.status] || UNTIS_STATUS.normal, idx = w.stunden.indexOf(l), farbe = st.farbe || fachFarbe(l.fach);
+        return `<div class="chip u-${l.status} ${jetzt ? 'now' : ''}" onclick="untisDetails(${idx})" title="${esc(l.fach_lang || l.fach)}"
+          style="background:color-mix(in srgb,${farbe} ${l.status === 'normal' ? 16 : 22}%,transparent);color:${farbe}">
+          <b>${esc(l.fach_lang && l.fach_lang.length <= 11 ? l.fach_lang : l.fach)}</b><span>${st.txt ? st.txt + (l.raum ? ' · ' : '') : ''}${esc(l.raum || '')}</span></div>`; }).join('')}</div>`;
+    });
+  });
+  html += `</div>`;
+  const n = (s) => w.stunden.filter(l => l.status === s).length;
+  const legende = `<div class="u-legende"><span><i style="background:var(--orange)"></i>Vertretung/Raum ${n('vertretung') ? '(' + n('vertretung') + ')' : ''}</span>
+    <span><i style="background:var(--red)"></i>Entfall ${n('entfall') ? '(' + n('entfall') + ')' : ''}</span><span><i style="background:var(--purple)"></i>Prüfung ${n('pruefung') ? '(' + n('pruefung') + ')' : ''}</span></div>`;
+  return kopf + (w.stunden.length ? html + legende : emptyBox('🌴', 'Kein Unterricht', 'In dieser Woche steht nichts im Untis-Stundenplan.'));
+}
+function untisDetails(i){
+  const l = untisLetzteWoche[i]; if (!l) return;
+  const st = UNTIS_STATUS[l.status] || UNTIS_STATUS.normal;
+  openSheet2(l.fach_lang || l.fach, `<div class="section"><div class="list">
+    ${st.txt ? `<div class="field"><label>Status</label><div class="state-line" style="color:${st.farbe};font-weight:600">${st.emo} ${st.txt}</div></div>` : ''}
+    <div class="field"><label>Wann</label><div class="state-line">${longDate(parseTag(l.datum))}, ${l.von} – ${l.bis}</div></div>
+    ${l.raum ? `<div class="field"><label>Raum</label><div class="state-line">${esc(l.raum)}</div></div>` : ''}
+    ${l.klasse ? `<div class="field"><label>Klasse</label><div class="state-line">${esc(l.klasse)}</div></div>` : ''}
+    ${l.info ? `<div class="field"><label>Info</label><div class="state-line" style="white-space:normal">${esc(l.info)}</div></div>` : ''}
+  </div></div>`, null);
+}
+
+// Einstellungen
+let untisModus = 'passwort';
+const UNTIS_HILFE = {
+  passwort: 'Öffne Untis im Browser und kopiere die Adresse der Anmeldeseite bei „Server“ hinein – die Schule wird automatisch erkannt. Dann deinen Untis-Benutzernamen und dein Passwort eintragen.',
+  schluessel: 'Für Anmeldung mit Microsoft: Öffne Untis im Browser → oben rechts auf dein Profil → „Freigaben“ → bei „Zugriff über Untis Mobile“ auf „Anzeigen“. Dort stehen Benutzer und Schlüssel (lange Buchstabenreihe) – beides hier eintragen.',
+};
+function untisBoxZeigen(){
+  const an = $('#fUntis').checked; $('#untisBox').style.display = an ? '' : 'none';
+  $('#fUntisPwLabel').textContent = untisModus === 'schluessel' ? 'Schlüssel' : 'Passwort';
+  $('#untisHilfe').textContent = UNTIS_HILFE[untisModus];
+  $('#fUntisPw').placeholder = S.untis_geheim_gesetzt ? '•••••••• (gespeichert)' : (untisModus === 'schluessel' ? 'z. B. ABCDEFGHIJKLMNOP' : 'Untis-Passwort');
+}
+function untisLinkLesen(){
+  const v = $('#fUntisUrl').value.trim(); if (!v) return;
+  const sch = v.match(/school=([^&#\s]+)/);
+  if (sch) $('#fUntisSchule').value = decodeURIComponent(sch[1].replace(/\+/g, ' '));
+  const host = v.match(/^(?:https?:\/\/)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)/i);
+  if (host && (sch || v.includes('/'))) $('#fUntisUrl').value = host[1].toLowerCase();
 }
 
 designLaden(); designAnwenden();

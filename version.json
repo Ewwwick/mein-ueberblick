@@ -1,6 +1,6 @@
 {
-  "version": "14",
-  "notiz": "Neues Auswahlmenü im iOS-Stil, ehrlichere Update-Anzeige",
+  "version": "15",
+  "notiz": "Untis: Stundenplan mit Ausfällen und Vertretungen",
   "dateien": [
     "app.py",
     "1_installieren.bat",
