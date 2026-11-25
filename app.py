@@ -35,7 +35,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 # Grundeinstellungen
 # --------------------------------------------------------------------------
 APP_NAME = "Mein Überblick"
-APP_VERSION = "15"
+APP_VERSION = "16"
 
 # Online-Updates: Hier liegt die neueste Version (öffentliches GitHub-Repository "besitzer/name").
 # Leer = keine Online-Updates.
@@ -402,9 +402,14 @@ def untis_holen(cfg, start, tage=7):
         stunden, raster = untis_schluessel_holen(cfg, geheim, start, tage)
     else:
         stunden, raster = untis_passwort_holen(cfg, geheim, start, tage)
-    stunden.sort(key=lambda x: (x["datum"], x["von"]))
+    einzeln, gesehen = [], set()
+    for x in sorted(stunden, key=lambda x: (x["datum"], x["von"], x["status"] == "normal")):
+        k = (x["datum"], x["von"], x["bis"], x["fach"], x["raum"])
+        if k not in gesehen:
+            gesehen.add(k)
+            einzeln.append(x)
     raster.sort(key=lambda x: x["von"])
-    return stunden, raster
+    return einzeln, raster
 
 
 def montag_von(d):

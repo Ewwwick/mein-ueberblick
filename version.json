@@ -1,6 +1,6 @@
 {
-  "version": "15",
-  "notiz": "Untis: Stundenplan mit Ausfällen und Vertretungen",
+  "version": "16",
+  "notiz": "Untis: Parallele Stunden nebeneinander, Duplikate entfernt",
   "dateien": [
     "app.py",
     "1_installieren.bat",
