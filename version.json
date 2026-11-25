@@ -1,0 +1,22 @@
+{
+  "version": "13",
+  "notiz": "Online-Updates über GitHub",
+  "dateien": [
+    "app.py",
+    "1_installieren.bat",
+    "2_starten.bat",
+    "3_autostart_einschalten.bat",
+    "4_desktop_symbol.bat",
+    "ANLEITUNG.txt",
+    "NEU_STARTEN.bat",
+    "_python_finden.bat",
+    "autostart_ausschalten.bat",
+    "icon.ico",
+    "requirements.txt",
+    "web/icon-192.png",
+    "web/icon-512.png",
+    "web/icon.svg",
+    "web/index.html",
+    "web/sw.js"
+  ]
+}
