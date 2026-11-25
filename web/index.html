@@ -326,9 +326,20 @@ html[data-theme="light"] .toast{background:rgba(255,255,255,.95)}
 .swatches button.on{transform:scale(1.15);box-shadow:0 0 0 2px var(--sheet), 0 0 0 4px var(--label)}
 @media (max-width:1150px){ .cols{grid-template-columns:1fr} }
 @media (max-width:1000px){
-  .sidebar{width:68px} .content{margin-left:92px}
-  .sb-item .lbl,.sb-head span,.sb-sec,.sb-item .badge{display:none}
+  .sidebar{width:68px;transition:width .3s cubic-bezier(.3,.8,.3,1), box-shadow .3s;overflow:hidden} .content{margin-left:92px}
+  .sb-item .lbl,.sb-head span,.sb-item .badge{display:none}
   .sb-item{justify-content:center;padding:8px 0}
+  .sb-head{justify-content:center;padding-left:0;padding-right:0}
+  /* Kategorien bleiben als kleine Überschriften sichtbar */
+  .sb-sec{display:block;font-size:8.5px;text-align:center;padding:12px 0 4px;letter-spacing:.06em;white-space:nowrap;
+    border-top:.5px solid var(--sep);margin:6px 6px 0}
+  /* Beim Drüberfahren aufklappen – wie im großen Fenster */
+  .sidebar:hover{width:250px;z-index:40;box-shadow:0 20px 60px rgba(0,0,0,.22)}
+  .sidebar:hover .sb-item .lbl,.sidebar:hover .sb-head span{display:block}
+  .sidebar:hover .sb-item .badge{display:inline-block}
+  .sidebar:hover .sb-item{justify-content:flex-start;padding:7px 10px}
+  .sidebar:hover .sb-head{justify-content:flex-start;padding:4px 8px 10px}
+  .sidebar:hover .sb-sec{font-size:12px;text-align:left;padding:14px 10px 5px;border-top:0;margin:0;letter-spacing:.02em}
 }
 
 /* =====================================================================

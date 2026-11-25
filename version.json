@@ -1,6 +1,6 @@
 {
-  "version": "16",
-  "notiz": "Untis: Parallele Stunden nebeneinander, Duplikate entfernt",
+  "version": "17",
+  "notiz": "Schmale Seitenleiste: Kategorien sichtbar, klappt beim Drüberfahren auf",
   "dateien": [
     "app.py",
     "1_installieren.bat",
