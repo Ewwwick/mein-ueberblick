@@ -1,6 +1,6 @@
 {
-  "version": "13",
-  "notiz": "Online-Updates über GitHub",
+  "version": "14",
+  "notiz": "Neues Auswahlmenü im iOS-Stil, ehrlichere Update-Anzeige",
   "dateien": [
     "app.py",
     "1_installieren.bat",
