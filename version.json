@@ -1,6 +1,6 @@
 {
-  "version": "17",
-  "notiz": "Schmale Seitenleiste: Kategorien sichtbar, klappt beim Drüberfahren auf",
+  "version": "18",
+  "notiz": "Untis: Wochenauswahl für die nächsten Wochen, Vorladen, Pfeiltasten",
   "dateien": [
     "app.py",
     "1_installieren.bat",

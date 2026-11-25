@@ -649,6 +649,15 @@ html[data-theme="dark"] body.glass .pmenu{background:rgba(40,40,46,.82)}
 .u-legende{display:flex;gap:18px;justify-content:center;font-size:13px;color:var(--label2);margin-top:12px;flex-wrap:wrap}
 .u-legende i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .lesson-now.strike{text-decoration:line-through;opacity:.7}
+
+.wk-chips{display:flex;gap:8px;overflow-x:auto;margin:0 0 14px;padding:2px}
+.wk-chips button{flex:none;display:flex;flex-direction:column;align-items:center;padding:7px 14px;border-radius:14px;background:var(--fill);font-size:13px;transition:background .2s, transform .2s}
+.wk-chips button span{font-size:11px;color:var(--label2)}
+.wk-chips button:hover{background:var(--fill2)}
+.wk-chips button.on{background:var(--blue);color:#fff}
+.wk-chips button.on span{color:rgba(255,255,255,.8)}
+body.glass .wk-chips button{background:var(--glass);-webkit-backdrop-filter:blur(var(--gb)) saturate(180%);backdrop-filter:blur(var(--gb)) saturate(180%);box-shadow:inset 0 1px 1px var(--glass-edge)}
+body.glass .wk-chips button.on{background:var(--blue)}
 </style>
 </head>
 <body class="glass" data-wall="ocean">
@@ -1264,7 +1273,12 @@ $('#btnQuit').onclick = async () => {
   if (!confirm('Programm wirklich beenden? Dann werden keine Aufgaben mehr automatisch eingetragen.')) return;
   await post('/api/beenden'); document.body.innerHTML = '<div class="empty" style="padding-top:30vh"><b>Beendet</b>Du kannst dieses Fenster jetzt schließen.</div>';
 };
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (sheet2Open) closeSheet2(); else if (sheetOpen) closeSheet(); } });
+document.addEventListener('keydown', e => {
+  if (view === 'stundenplan' && spQuelle === 'untis' && untisAn() && !sheetOpen && !sheet2Open && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) {
+    if (e.key === 'ArrowRight') { untisOffset++; render(); return; }
+    if (e.key === 'ArrowLeft') { untisOffset--; render(); return; }
+  }
+  if (e.key === 'Escape') { if (sheet2Open) closeSheet2(); else if (sheetOpen) closeSheet(); } });
 
 // =====================================================================
 // Zweites Blatt für kleine Formulare
@@ -2142,8 +2156,13 @@ function renderUntisWoche(){
   const kopf = `<div class="cal-head"><div class="m">KW ${kw(mon)} <span style="color:var(--label2);font-weight:500;font-size:16px">${mon.toLocaleDateString(DE,{day:'numeric',month:'short'})} – ${addDays(mon,4).toLocaleDateString(DE,{day:'numeric',month:'short'})}</span></div>
     <div class="cal-nav"><button class="today-btn" onclick="untisOffset=0;render()">Heute</button>
     <button class="circle-btn" onclick="untisOffset--;render()">${ICON.left}</button><button class="circle-btn" onclick="untisOffset++;render()">${ICON.right}</button></div></div>`;
-  if (w.laden) return kopf + `<div class="empty">Lade Stundenplan aus Untis …</div>`;
-  if (w.fehler) return kopf + emptyBox('⚠️', 'Untis nicht erreichbar', esc(w.fehler));
+  // Wochenauswahl: diese Woche bis in 5 Wochen
+  const chips = `<div class="wk-chips">${[0,1,2,3,4,5].map(o => { const m = addDays(mondayOf(new Date()), o * 7);
+      return `<button class="${o === untisOffset ? 'on' : ''}" onclick="untisOffset=${o};render()"><b>${o === 0 ? 'Diese Woche' : o === 1 ? 'Nächste' : 'KW ' + kw(m)}</b><span>${m.toLocaleDateString(DE,{day:'numeric',month:'short'})}</span></button>`; }).join('')}</div>`;
+  // die nächsten Wochen schon im Hintergrund laden
+  setTimeout(() => { for (let o = Math.max(2, untisOffset); o <= untisOffset + 2; o++) untisWoche(o); }, 400);
+  if (w.laden) return kopf + chips + `<div class="empty">Lade Stundenplan aus Untis …</div>`;
+  if (w.fehler) return kopf + chips + emptyBox('⚠️', 'Untis nicht erreichbar', esc(w.fehler));
   let raster = w.raster && w.raster.length ? w.raster : [...new Map(w.stunden.map(l => [l.von, {nr: '', von: l.von, bis: l.bis}])).values()].sort((a, b) => a.von.localeCompare(b.von));
   // nur Zeilen zeigen, in denen diese Woche auch etwas ist (plus Lücken dazwischen)
   const belegt = raster.map(u => w.stunden.some(l => l.von <= u.von && u.von < l.bis));
@@ -2170,7 +2189,7 @@ function renderUntisWoche(){
   const n = (s) => w.stunden.filter(l => l.status === s).length;
   const legende = `<div class="u-legende"><span><i style="background:var(--orange)"></i>Vertretung/Raum ${n('vertretung') ? '(' + n('vertretung') + ')' : ''}</span>
     <span><i style="background:var(--red)"></i>Entfall ${n('entfall') ? '(' + n('entfall') + ')' : ''}</span><span><i style="background:var(--purple)"></i>Prüfung ${n('pruefung') ? '(' + n('pruefung') + ')' : ''}</span></div>`;
-  return kopf + (w.stunden.length ? html + legende : emptyBox('🌴', 'Kein Unterricht', 'In dieser Woche steht nichts im Untis-Stundenplan.'));
+  return kopf + chips + (w.stunden.length ? html + legende : emptyBox('🌴', 'Kein Unterricht', 'In dieser Woche steht nichts im Untis-Stundenplan – vielleicht Ferien?'));
 }
 function untisDetails(i){
   const l = untisLetzteWoche[i]; if (!l) return;
