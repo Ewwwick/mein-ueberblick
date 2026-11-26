@@ -35,7 +35,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 # Grundeinstellungen
 # --------------------------------------------------------------------------
 APP_NAME = "Mein Überblick"
-APP_VERSION = "22"
+APP_VERSION = "23"
 
 # Online-Updates: Hier liegt die neueste Version (öffentliches GitHub-Repository "besitzer/name").
 # Leer = keine Online-Updates.

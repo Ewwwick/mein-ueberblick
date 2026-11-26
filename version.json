@@ -1,6 +1,6 @@
 {
-  "version": "22",
-  "notiz": "Schmale Seitenleiste: runder Glas-Kasten, der beim Aufklappen wächst",
+  "version": "23",
+  "notiz": "Schmale Seitenleiste: kein eckiger Kasten mehr hinter dem aktiven Symbol (Dunkelmodus)",
   "dateien": [
     "app.py",
     "1_installieren.bat",

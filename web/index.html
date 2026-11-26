@@ -349,8 +349,8 @@ html[data-theme="light"] .toast{background:rgba(255,255,255,.95)}
   .sidebar.open .sb-inhalt{clip-path:inset(-4px -4px -4px -4px)}
   .sidebar .sb-item .lbl,.sidebar .sb-head span,.sidebar .sb-item .badge{opacity:0;transition:opacity .15s}
   .sidebar.open .sb-item .lbl,.sidebar.open .sb-head span,.sidebar.open .sb-item .badge{opacity:1;transition:opacity .3s .1s}
-  .sidebar:not(.open) .sb-item:hover{background:transparent}
-  .sidebar:not(.open) .sb-item.on{background:transparent;box-shadow:none;color:var(--label)}
+  .sidebar:not(.open) .sb-item,.sidebar:not(.open) .sb-item:hover,.sidebar:not(.open) .sb-item.on{background:transparent !important;box-shadow:none !important}
+  .sidebar:not(.open) .sb-item.on{color:var(--label)}
   .sidebar:not(.open) .sb-item.on .si{box-shadow:0 0 0 2.5px var(--bg, #fff), 0 0 0 4.5px var(--blue)}
   .sidebar:not(.open) .sb-item:hover .si{transform:scale(1.08)}
   .sb-item .si{transition:transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .25s}
