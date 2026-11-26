@@ -1,6 +1,6 @@
 {
-  "version": "18",
-  "notiz": "Untis: Wochenauswahl für die nächsten Wochen, Vorladen, Pfeiltasten",
+  "version": "19",
+  "notiz": "Neue Datums-/Uhrzeitauswahl, Kalenderauswahl, Test-Eintrag",
   "dateien": [
     "app.py",
     "1_installieren.bat",

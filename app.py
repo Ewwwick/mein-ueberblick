@@ -35,7 +35,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 # Grundeinstellungen
 # --------------------------------------------------------------------------
 APP_NAME = "Mein Überblick"
-APP_VERSION = "18"
+APP_VERSION = "19"
 
 # Online-Updates: Hier liegt die neueste Version (öffentliches GitHub-Repository "besitzer/name").
 # Leer = keine Online-Updates.
@@ -902,7 +902,11 @@ def aktualisieren():
         try:
             principal = apple_verbinden(cfg)
             termine = apple_termine(principal)
-            apple = {"status": "verbunden", "nachricht": cfg["apple_id"]}
+            try:
+                namen = sorted({kal_name(k) for k in principal.calendars()})
+            except Exception:
+                namen = []
+            apple = {"status": "verbunden", "nachricht": cfg["apple_id"], "kalender": namen}
         except ImportError:
             apple = {"status": "fehler", "nachricht": "Zusatzpakete fehlen – bitte installieren.bat ausführen."}
         except Exception as e:
@@ -1251,6 +1255,25 @@ class Handler(BaseHTTPRequestHandler):
             self._antwort(200, {"ok": True})
             threading.Timer(0.4, neu_starten).start()
             return
+        if pfad == "/api/kalender/test":
+            cfg = cfg_laden()
+            try:
+                principal = apple_verbinden(cfg)
+                kal = ziel_kalender(principal, cfg.get("apple_kalender"))
+                beginn = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(minutes=10)).replace(second=0, microsecond=0)
+                ics = "\r\n".join(["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Mein Ueberblick//Test//DE", "BEGIN:VEVENT",
+                                    f"UID:mu-test-{int(time.time())}", f"DTSTAMP:{dt.datetime.now(dt.timezone.utc):%Y%m%dT%H%M%SZ}",
+                                    f"DTSTART:{beginn:%Y%m%dT%H%M%SZ}", f"DTEND:{beginn + dt.timedelta(minutes=15):%Y%m%dT%H%M%SZ}",
+                                    ics_falten("SUMMARY:" + ics_text("✅ Test von Mein Überblick – kann gelöscht werden")),
+                                    "END:VEVENT", "END:VCALENDAR"]) + "\r\n"
+                kal.save_event(ics)
+                log(f"Test-Termin in '{kal_name(kal)}' eingetragen.")
+                return self._antwort(200, {"ok": True, "kalender": kal_name(kal)})
+            except ImportError:
+                return self._antwort(500, {"fehler": "Zusatzpakete fehlen – bitte 1_installieren.bat ausführen."})
+            except Exception as e:
+                log("Test-Termin fehlgeschlagen:", traceback.format_exc())
+                return self._antwort(500, {"fehler": str(e)[:200] or "Unbekannter Fehler"})
         if pfad == "/api/neustart":
             self._antwort(200, {"ok": True})
             threading.Timer(0.4, neu_starten).start()

@@ -658,6 +658,37 @@ html[data-theme="dark"] body.glass .pmenu{background:rgba(40,40,46,.82)}
 .wk-chips button.on span{color:rgba(255,255,255,.8)}
 body.glass .wk-chips button{background:var(--glass);-webkit-backdrop-filter:blur(var(--gb)) saturate(180%);backdrop-filter:blur(var(--gb)) saturate(180%);box-shadow:inset 0 1px 1px var(--glass-edge)}
 body.glass .wk-chips button.on{background:var(--blue)}
+
+/* ===== Datums- und Uhrzeitauswahl im iOS-Stil ===== */
+.field input[type=date]::-webkit-calendar-picker-indicator,.field input[type=time]::-webkit-calendar-picker-indicator{display:none}
+.field input[type=date],.field input[type=time]{cursor:pointer;font-weight:500}
+.pmenu.dpick,.pmenu.tpick{max-height:none;overflow:visible;padding:12px}
+.dpick{width:304px}
+.dpick button,.tpick button{width:auto;padding:0;gap:0}
+.dp-kopf{display:flex;align-items:center;gap:4px;padding:2px 4px 8px}
+.dp-kopf b{font-size:16px}
+.pmenu .dp-nav{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--blue)}
+.dp-wt,.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
+.dp-wt span{font-size:11px;font-weight:600;color:var(--label2);padding:4px 0}
+.pmenu .dp-grid button{height:36px;width:36px;margin:1px auto;border-radius:50%;font-size:15px;justify-content:center;display:grid;place-items:center}
+.pmenu .dp-grid button.we{color:var(--label2)}
+.pmenu .dp-grid button.heute{color:var(--blue);font-weight:700}
+.pmenu .dp-grid button.sel{background:var(--blue);color:#fff;font-weight:600}
+.dp-schnell{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:.5px solid var(--sep)}
+.pmenu .dp-schnell button{flex:1;justify-content:center;padding:8px 6px;border-radius:10px;background:var(--fill);font-size:12.5px;font-weight:500;white-space:nowrap}
+.pmenu .dp-schnell button:hover{background:var(--fill2)}
+.tpick{width:290px}
+.tp-titel{font-size:11.5px;font-weight:600;color:var(--label2);text-transform:uppercase;margin:2px 4px 6px;letter-spacing:.02em}
+.tp-std{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:12px}
+.pmenu .tp-std button{flex-direction:column;justify-content:center;align-items:center;padding:5px 0;border-radius:10px;background:var(--fill);font-weight:700;font-size:13px}
+.tp-std button small{font-size:10.5px;font-weight:500;color:var(--label2)}
+.pmenu .tp-std button.sel{background:var(--blue);color:#fff}
+.pmenu .tp-std button.sel small{color:rgba(255,255,255,.85)}
+.tp-cols{display:flex;gap:8px;height:156px}
+.tp-col{position:relative;flex:1;overflow-y:auto;border-radius:12px;background:var(--fill);padding:4px}
+.pmenu .tp-col button{width:100%;justify-content:center;padding:6px 0;font-variant-numeric:tabular-nums;font-size:16px;border-radius:8px}
+.pmenu .tp-col button.sel{background:var(--blue);color:#fff;font-weight:600}
+.pmenu .dp-schnell button.tp-ok{background:var(--blue);color:#fff;font-weight:600}
 </style>
 </head>
 <body class="glass" data-wall="ocean">
@@ -775,8 +806,9 @@ body.glass .wk-chips button.on{background:var(--blue)}
       <div class="list">
         <div class="field"><label>Apple-ID</label><input type="email" id="fApple" placeholder="name@icloud.com" autocomplete="off"></div>
         <div class="field"><label>App-Passwort</label><input type="password" id="fPass" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="new-password"></div>
-        <div class="field"><label>Kalender für Aufgaben</label><input type="text" id="fCal" placeholder="Schule"></div>
+        <div class="field"><label>Kalender für Aufgaben</label><select id="fCal"></select></div>
         <div class="field"><label>Status</label><div class="state-line" id="appleState">–</div></div>
+        <button class="btn-row" id="btnKalTest">Test-Eintrag senden</button>
       </div>
       <div class="sec-foot">Nach dem Speichern wird das Passwort-Feld aus Sicherheitsgründen geleert – es steht dann „gespeichert“ drin. Nicht dein normales Apple-Passwort, sondern ein <b>App-spezifisches Passwort</b> von appleid.apple.com (Schritt 4 der Anleitung). Es wird sicher in Windows gespeichert. Gibt es den Kalender noch nicht, wird er angelegt.</div>
     </div>
@@ -1115,7 +1147,7 @@ async function openSheet(){
   S = await (await fetch('/api/einstellungen')).json();
   $('#fDemo').checked = S.demo; $('#fClient').value = S.ms_client_id || ''; $('#fApple').value = S.apple_id || '';
   $('#fPass').value = ''; $('#fPass').placeholder = S.apple_passwort_gesetzt ? '•••••••• (gespeichert)' : 'xxxx-xxxx-xxxx-xxxx';
-  $('#fCal').value = S.apple_kalender || 'Schule'; $('#fAuto').checked = S.auto_eintragen;
+  kalenderOptionen(S.apple_kalender || 'Schule'); $('#fAuto').checked = S.auto_eintragen;
   $('#fRem').value = S.erinnerung; $('#fInt').value = String(S.intervall_minuten);
   artValue = S.termin_art || 'ganztags'; $('#fOrt').value = S.wetter_ort || '';
   $('#fTeams').checked = !!S.teams_aktiv; teamsBoxZeigen();
@@ -1132,6 +1164,24 @@ $('#fTeams').addEventListener('change', teamsBoxZeigen);
 $('#fUntis').addEventListener('change', () => { untisBoxZeigen(); $('#untisAusText').style.display = $('#fUntis').checked ? 'none' : '';
   setTimeout(() => initSeg($('#fUntisModus'), untisModus, v => { untisModus = v; untisBoxZeigen(); }), 30); });
 $('#fUntisUrl').addEventListener('change', untisLinkLesen); $('#fUntisUrl').addEventListener('paste', () => setTimeout(untisLinkLesen, 30));
+function kalenderOptionen(aktuell){
+  const namen = [...(D?.apple?.kalender || [])];
+  const opts = namen.map(n => [n, n]);
+  if (!namen.some(n => n.toLowerCase() === aktuell.toLowerCase())) opts.unshift([aktuell, aktuell + ' (wird neu angelegt)']);
+  if (!opts.some(o => o[0].toLowerCase() === 'schule')) opts.push(['Schule', 'Schule (neu anlegen)']);
+  $('#fCal').innerHTML = opts.map(([v, t]) => `<option value="${esc(v)}">${esc(t)}</option>`).join('');
+  $('#fCal').value = opts.find(o => o[0].toLowerCase() === aktuell.toLowerCase())?.[0] || aktuell;
+}
+$('#btnKalTest').onclick = async () => {
+  const b = $('#btnKalTest'); b.textContent = 'Sende Test-Eintrag …';
+  await speichern(true);
+  try {
+    const r = await fetch('/api/kalender/test', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'}); const j = await r.json();
+    if (r.ok) toast(`✅ Test-Termin in „${j.kalender}“ eingetragen – schau in die Kalender-App`);
+    else toast('⚠️ ' + (j.fehler || 'Hat nicht geklappt'));
+  } catch { toast('⚠️ Hat nicht geklappt'); }
+  b.textContent = 'Test-Eintrag senden';
+};
 function closeSheet(){ $('#dim').classList.remove('open'); $('#sheet').classList.remove('open'); sheetOpen = false; }
 function updateSheetStatus(){
   if (!D) return;
@@ -1173,6 +1223,64 @@ $('#btnLogin').onclick = async () => {
   const iv = setInterval(async () => { await laden(); if (!D?.anmeldung?.laeuft) { clearInterval(iv); setTimeout(laden, 3000); } }, 1500);
 };
 $('#btnLogout').onclick = async () => { await post('/api/teams/abmelden'); S.teams_angemeldet = false; toast('Abgemeldet'); setTimeout(laden, 1500); };
+
+// ---------- Datums- und Uhrzeitauswahl im iOS-Stil ----------
+let dpOffen = null;
+function dpZu(){ if (dpOffen) { dpOffen.remove(); dpOffen = null; } }
+function dpPos(el, m){
+  document.body.appendChild(m);
+  const r = el.getBoundingClientRect(), mh = m.offsetHeight, mw = m.offsetWidth;
+  let top = r.bottom + 8; if (top + mh > innerHeight - 10) top = Math.max(10, r.top - mh - 8);
+  m.style.top = top + 'px'; m.style.left = Math.max(10, Math.min(innerWidth - mw - 10, r.right - mw)) + 'px';
+}
+function setzeWert(el, v){ el.value = v; el.dispatchEvent(new Event('input', {bubbles:true})); el.dispatchEvent(new Event('change', {bubbles:true})); }
+function datumAuf(el){
+  dpZu(); const m = document.createElement('div'); m.className = 'pmenu dpick'; dpOffen = m; m._el = el;
+  const sel = el.value ? parseTag(el.value) : startOfDay(new Date());
+  let monat = new Date(sel.getFullYear(), sel.getMonth(), 1);
+  const zeichne = () => {
+    const erster = (monat.getDay() + 6) % 7, anzahl = new Date(monat.getFullYear(), monat.getMonth() + 1, 0).getDate(), heute = startOfDay(new Date());
+    let zellen = '<span></span>'.repeat(erster);
+    for (let t = 1; t <= anzahl; t++){
+      const d = new Date(monat.getFullYear(), monat.getMonth(), t), we = d.getDay() === 0 || d.getDay() === 6;
+      zellen += `<button data-d="${isoTag(d)}" class="${sameDay(d, sel) ? 'sel' : ''} ${sameDay(d, heute) ? 'heute' : ''} ${we ? 'we' : ''}">${t}</button>`;
+    }
+    m.innerHTML = `<div class="dp-kopf"><b>${monat.toLocaleDateString(DE, {month:'long', year:'numeric'})}</b><span style="flex:1"></span>
+        <button class="dp-nav" data-n="-1">${ICON.left}</button><button class="dp-nav" data-n="1">${ICON.right}</button></div>
+      <div class="dp-wt">${['Mo','Di','Mi','Do','Fr','Sa','So'].map(x => `<span>${x}</span>`).join('')}</div>
+      <div class="dp-grid">${zellen}</div>
+      <div class="dp-schnell">${[['Heute',0],['Morgen',1],['Übermorgen',2],['In 1 Woche',7]].map(([n, o]) => `<button data-d="${isoTag(addDays(heute, o))}">${n}</button>`).join('')}</div>`;
+    m.querySelectorAll('.dp-nav').forEach(b => b.onclick = () => { monat = new Date(monat.getFullYear(), monat.getMonth() + Number(b.dataset.n), 1); zeichne(); });
+    m.querySelectorAll('[data-d]').forEach(b => b.onclick = () => { setzeWert(el, b.dataset.d); dpZu(); });
+  };
+  zeichne(); dpPos(el, m);
+}
+function zeitAuf(el){
+  dpZu(); const m = document.createElement('div'); m.className = 'pmenu tpick'; dpOffen = m; m._el = el;
+  let [h, mi] = (el.value || '08:00').split(':').map(Number);
+  const std = (D?.extras?.stunden || []).slice(0, 10), mRund = mi - mi % 5;
+  m.innerHTML = `${std.length ? `<div class="tp-titel">Stundenbeginn</div><div class="tp-std">${std.map((x, i) =>
+      `<button data-t="${x.von}" class="${x.von === el.value ? 'sel' : ''}">${i + 1}.<small>${x.von}</small></button>`).join('')}</div>` : ''}
+    <div class="tp-titel">Genaue Uhrzeit</div>
+    <div class="tp-cols"><div class="tp-col">${[...Array(24)].map((_, x) => `<button data-h="${x}" class="${x === h ? 'sel' : ''}">${String(x).padStart(2, '0')}</button>`).join('')}</div>
+      <div class="tp-col">${[...Array(12)].map((_, i) => i * 5).map(x => `<button data-m="${x}" class="${x === mRund ? 'sel' : ''}">${String(x).padStart(2, '0')}</button>`).join('')}</div></div>
+    <div class="dp-schnell"><button data-t="23:59">Ende des Tages</button><button class="tp-ok">Fertig</button></div>`;
+  const setz = () => setzeWert(el, `${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}`);
+  m.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { setzeWert(el, b.dataset.t); dpZu(); });
+  m.querySelectorAll('[data-h]').forEach(b => b.onclick = () => { h = Number(b.dataset.h); m.querySelectorAll('[data-h]').forEach(x => x.classList.toggle('sel', x === b)); setz(); });
+  m.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { mi = Number(b.dataset.m); m.querySelectorAll('[data-m]').forEach(x => x.classList.toggle('sel', x === b)); setz(); });
+  m.querySelector('.tp-ok').onclick = dpZu;
+  dpPos(el, m);
+  m.querySelectorAll('.tp-col').forEach(c => { const s2 = c.querySelector('.sel'); if (s2) c.scrollTop = s2.offsetTop - c.clientHeight / 2 + s2.offsetHeight / 2; });
+}
+document.addEventListener('mousedown', e => {
+  const el = e.target.closest && e.target.closest('.field input[type=date], .field input[type=time]');
+  if (el) { e.preventDefault(); if (dpOffen && dpOffen._el === el) { dpZu(); return; } (el.type === 'date' ? datumAuf : zeitAuf)(el); return; }
+  if (dpOffen && !dpOffen.contains(e.target)) dpZu();
+}, true);
+document.addEventListener('scroll', e => { if (dpOffen && !dpOffen.contains(e.target)) dpZu(); }, true);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && dpOffen) { dpZu(); e.stopPropagation(); } }, true);
+
 // ---------- Eigenes Auswahlmenü statt der Windows-Liste ----------
 let pmOffen = null;
 function pmZu(){ if (pmOffen) { pmOffen.remove(); pmOffen = null; } }
@@ -1290,7 +1398,7 @@ function openSheet2(titel, html, onDone, fertigText='Fertig'){
   $('#dim').classList.add('open'); $('#sheet2').classList.add('open');
   setTimeout(() => { const f = $('#s2Body input'); if (f) f.focus(); }, 350);
 }
-function closeSheet2(){ sheet2Open = false; $('#sheet2').classList.remove('open'); if (!sheetOpen) $('#dim').classList.remove('open'); }
+function closeSheet2(){ dpZu(); sheet2Open = false; $('#sheet2').classList.remove('open'); if (!sheetOpen) $('#dim').classList.remove('open'); }
 $('#s2Cancel').onclick = closeSheet2;
 $('#s2Done').onclick = async () => { if (sheet2Done && (await sheet2Done()) === false) return; closeSheet2(); };
 $('#s2Body').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') $('#s2Done').click(); });
