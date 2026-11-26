@@ -326,21 +326,27 @@ html[data-theme="light"] .toast{background:rgba(255,255,255,.95)}
 .swatches button.on{transform:scale(1.15);box-shadow:0 0 0 2px var(--sheet), 0 0 0 4px var(--label)}
 @media (max-width:1150px){ .cols{grid-template-columns:1fr} }
 @media (max-width:1000px){
-  .sidebar{width:68px;transition:width .3s cubic-bezier(.3,.8,.3,1), box-shadow .3s;overflow:hidden} .content{margin-left:92px}
-  .sb-item .lbl,.sb-head span,.sb-item .badge{display:none}
-  .sb-item{justify-content:center;padding:8px 0}
-  .sb-head{justify-content:center;padding-left:0;padding-right:0}
-  /* Kategorien bleiben als kleine Überschriften sichtbar */
-  .sb-sec{display:block;font-size:8.5px;text-align:center;padding:12px 0 4px;letter-spacing:.06em;white-space:nowrap;
-    border-top:.5px solid var(--sep);margin:6px 6px 0}
-  /* Beim Drüberfahren aufklappen – wie im großen Fenster */
-  .sidebar:hover{width:250px;z-index:40;box-shadow:0 20px 60px rgba(0,0,0,.22)}
-  .sidebar:hover .sb-item .lbl,.sidebar:hover .sb-head span{display:block}
-  .sidebar:hover .sb-item .badge{display:inline-block}
-  .sidebar:hover .sb-item{justify-content:flex-start;padding:7px 10px}
-  .sidebar:hover .sb-head{justify-content:flex-start;padding:4px 8px 10px}
-  .sidebar:hover .sb-sec{font-size:12px;text-align:left;padding:14px 10px 5px;border-top:0;margin:0;letter-spacing:.02em}
+  .content{margin-left:92px}
+  /* Schmale Leiste: intern immer voll breit, wird wie ein Vorhang aufgedeckt (kein Neu-Anordnen beim Aufklappen) */
+  .sidebar{width:250px;z-index:40;clip-path:inset(0 182px 0 0 round 22px);transition:clip-path .42s cubic-bezier(.32,.72,0,1);will-change:clip-path}
+  body.glass .sidebar{clip-path:inset(0 182px 0 0 round 28px)}
+  .sidebar.open,body.glass .sidebar.open{clip-path:inset(0 0 0 0 round 28px)}
+  .sidebar .sb-item .lbl,.sidebar .sb-head span,.sidebar .sb-item .badge{opacity:0;transition:opacity .15s}
+  .sidebar.open .sb-item .lbl,.sidebar.open .sb-head span,.sidebar.open .sb-item .badge{opacity:1;transition:opacity .3s .1s}
+  .sidebar:not(.open) .sb-item:hover{background:transparent}
+  .sidebar:not(.open) .sb-item.on{background:transparent;box-shadow:none;color:var(--label)}
+  .sidebar:not(.open) .sb-item.on .si{box-shadow:0 0 0 2.5px var(--bg, #fff), 0 0 0 4.5px var(--blue)}
+  .sidebar:not(.open) .sb-item:hover .si{transform:scale(1.08)}
+  .sb-item .si{transition:transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .25s}
+  /* Kategorien: im zugeklappten Zustand klein und mittig */
+  .sb-sec{position:relative}
+  .sb-sec .voll{opacity:0;transition:opacity .15s}
+  .sidebar.open .sb-sec .voll{opacity:1;transition:opacity .3s .1s}
+  .sb-sec .mini{position:absolute;left:0;top:8px;width:48px;text-align:center;font-size:8.5px;letter-spacing:.06em;border-top:.5px solid var(--sep);padding-top:6px;transition:opacity .2s}
+  .sidebar.open .sb-sec .mini{opacity:0}
 }
+.sb-sec .mini{display:none}
+@media (max-width:1000px){ .sb-sec .mini{display:block} }
 
 /* =====================================================================
    LIQUID GLASS
@@ -1818,7 +1824,7 @@ function sbItem(x, extra=''){
     <span class="si">${SI[x.icon]}</span><span class="lbl">${x.titel}</span>${b !== '' ? `<span class="badge" ${x.v==='fokus'?'id="sbFokus"':''}>${b}</span>` : ''}</button>`;
 }
 function renderSidebar(){
-  $('#sbNav').innerHTML = SEITEN.map(x => (x.abschnitt ? `<div class="sb-sec">${x.abschnitt}</div>` : '') + sbItem(x)).join('');
+  $('#sbNav').innerHTML = SEITEN.map(x => (x.abschnitt ? `<div class="sb-sec"><span class="voll">${x.abschnitt}</span><span class="mini">${x.abschnitt}</span></div>` : '') + sbItem(x)).join('');
   $('#sbFoot').innerHTML = sbItem({v:'_einst', titel:'Einstellungen', icon:'gear', farbe:'#8E8E93'}, 'openSheet()');
 }
 
@@ -2383,6 +2389,15 @@ function untisLinkLesen(){
   if (host && (sch || v.includes('/'))) $('#fUntisUrl').value = host[1].toLowerCase();
 }
 
+// Seitenleiste im schmalen Fenster: erst nach kurzem Verweilen öffnen, verzögert schließen (kein Flackern)
+(() => {
+  const sb = $('#sidebar'); let t;
+  const schmal = () => matchMedia('(max-width:1000px)').matches;
+  sb.addEventListener('mouseenter', () => { if (!schmal()) return; clearTimeout(t); t = setTimeout(() => sb.classList.add('open'), 120); });
+  sb.addEventListener('mouseleave', () => { clearTimeout(t); t = setTimeout(() => sb.classList.remove('open'), 260); });
+  sb.addEventListener('click', e => { if (e.target.closest('.sb-item') && schmal()) { clearTimeout(t); setTimeout(() => sb.classList.remove('open'), 150); } });
+  matchMedia('(max-width:1000px)').addEventListener?.('change', () => sb.classList.remove('open'));
+})();
 designLaden(); designAnwenden();
 try { const sv = localStorage.getItem('seite'); if (sv && SEITEN.some(x => x.v === sv)) view = sv; } catch {}
 render(); laden();
