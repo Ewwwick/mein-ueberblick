@@ -1,6 +1,6 @@
 {
-  "version": "21",
-  "notiz": "Schmale Seitenleiste: flüssiges Aufdecken statt Breiten-Animation, öffnet erst nach kurzem Verweilen",
+  "version": "22",
+  "notiz": "Schmale Seitenleiste: runder Glas-Kasten, der beim Aufklappen wächst",
   "dateien": [
     "app.py",
     "1_installieren.bat",

@@ -328,9 +328,25 @@ html[data-theme="light"] .toast{background:rgba(255,255,255,.95)}
 @media (max-width:1000px){
   .content{margin-left:92px}
   /* Schmale Leiste: intern immer voll breit, wird wie ein Vorhang aufgedeckt (kein Neu-Anordnen beim Aufklappen) */
-  .sidebar{width:250px;z-index:40;clip-path:inset(0 182px 0 0 round 22px);transition:clip-path .42s cubic-bezier(.32,.72,0,1);will-change:clip-path}
-  body.glass .sidebar{clip-path:inset(0 182px 0 0 round 28px)}
-  .sidebar.open,body.glass .sidebar.open{clip-path:inset(0 0 0 0 round 28px)}
+  /* Die Leiste selbst ist unsichtbar – sichtbar ist ein eigener Glas-Kasten, der beim Aufklappen wächst */
+  .sidebar,body.glass .sidebar{width:250px;z-index:40;background:none !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important;
+    box-shadow:none !important;pointer-events:none}
+  body.glass .sidebar::before{display:none}
+  .sb-bg,.sb-inhalt{pointer-events:auto}
+  .sb-bg{display:block;position:absolute;top:0;left:0;bottom:0;width:68px;border-radius:22px;background:var(--card);
+    box-shadow:var(--shadow), 0 0 0 .5px var(--sep);transition:width .45s cubic-bezier(.32,.72,0,1), box-shadow .45s}
+  body.glass .sb-bg{border-radius:26px;background-color:var(--glass-strong);background-image:linear-gradient(160deg, rgba(255,255,255,.25), rgba(255,255,255,0) 35%);
+    -webkit-backdrop-filter:blur(calc(var(--gb) + 6px)) saturate(200%);backdrop-filter:blur(calc(var(--gb) + 6px)) saturate(200%);
+    box-shadow:inset 0 1px 1px var(--glass-edge), inset 0 -1px 1px var(--glass-edge2), inset 1px 0 0 var(--glass-edge2), inset -1px 0 0 var(--glass-edge2), 0 10px 30px rgba(0,0,0,.12)}
+  body.glass .sb-bg::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.2px;pointer-events:none;
+    background:linear-gradient(135deg, rgba(255,255,255,.95) 0%, rgba(255,255,255,.25) 22%, rgba(255,255,255,0) 45%, rgba(255,255,255,0) 60%, rgba(255,255,255,.35) 82%, rgba(255,255,255,.8) 100%);
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+  html[data-theme="dark"] body.glass .sb-bg::before{background:linear-gradient(135deg, rgba(255,255,255,.45) 0%, rgba(255,255,255,.08) 25%, rgba(255,255,255,0) 50%, rgba(255,255,255,.06) 75%, rgba(255,255,255,.3) 100%)}
+  .sidebar.open .sb-bg{width:250px;box-shadow:var(--shadow), 0 0 0 .5px var(--sep), 0 22px 60px rgba(0,0,0,.18)}
+  body.glass .sidebar.open .sb-bg{box-shadow:inset 0 1px 1px var(--glass-edge), inset 0 -1px 1px var(--glass-edge2), inset 1px 0 0 var(--glass-edge2), inset -1px 0 0 var(--glass-edge2), 0 24px 60px rgba(0,0,0,.24)}
+  /* Inhalt wird passend zum Kasten aufgedeckt */
+  .sb-inhalt{clip-path:inset(-4px 182px -4px -4px);transition:clip-path .45s cubic-bezier(.32,.72,0,1)}
+  .sidebar.open .sb-inhalt{clip-path:inset(-4px -4px -4px -4px)}
   .sidebar .sb-item .lbl,.sidebar .sb-head span,.sidebar .sb-item .badge{opacity:0;transition:opacity .15s}
   .sidebar.open .sb-item .lbl,.sidebar.open .sb-head span,.sidebar.open .sb-item .badge{opacity:1;transition:opacity .3s .1s}
   .sidebar:not(.open) .sb-item:hover{background:transparent}
@@ -723,6 +739,9 @@ input,select,textarea{caret-color:var(--blue)}
 ::selection{background:color-mix(in srgb,var(--blue) 30%,transparent)}
 :focus-visible{outline:2px solid color-mix(in srgb,var(--blue) 70%,transparent);outline-offset:2px;border-radius:8px}
 @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important;transition-duration:.01ms !important} }
+
+@media (min-width:1001px){ .sb-bg{display:none} }
+.sb-inhalt{position:relative;z-index:1;display:flex;flex-direction:column;height:100%;min-height:0}
 </style>
 </head>
 <body class="glass" data-wall="ocean">
@@ -737,9 +756,12 @@ input,select,textarea{caret-color:var(--blue)}
   </filter>
 </svg>
 <aside class="sidebar" id="sidebar">
-  <div class="sb-head"><img src="/icon-192.png" alt=""><span>Mein Überblick</span></div>
-  <nav class="sb-nav" id="sbNav"></nav>
-  <div class="sb-foot" id="sbFoot"></div>
+  <div class="sb-bg"></div>
+  <div class="sb-inhalt">
+    <div class="sb-head"><img src="/icon-192.png" alt=""><span>Mein Überblick</span></div>
+    <nav class="sb-nav" id="sbNav"></nav>
+    <div class="sb-foot" id="sbFoot"></div>
+  </div>
 </aside>
 
 <div class="content">
