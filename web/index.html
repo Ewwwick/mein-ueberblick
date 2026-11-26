@@ -742,6 +742,10 @@ input,select,textarea{caret-color:var(--blue)}
 
 @media (min-width:1001px){ .sb-bg{display:none} }
 .sb-inhalt{position:relative;z-index:1;display:flex;flex-direction:column;height:100%;min-height:0}
+
+body.pill-an .toast{bottom:88px}
+.update-pill.puls{animation:pillPuls .9s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pillPuls{0%{transform:translate(-50%,0) scale(1)}35%{transform:translate(-50%,0) scale(1.08)}100%{transform:translate(-50%,0) scale(1)}}
 </style>
 </head>
 <body class="glass" data-wall="ocean">
@@ -1392,13 +1396,17 @@ async function updateInstallieren(){
 }
 async function updateSuchen(){
   const b = $('#btnUpdSuchen'); b.textContent = 'Suche …';
-  try { const v = await post('/api/update/pruefen');
-    if (!v.online_aktiv) toast('Online-Updates sind noch nicht eingerichtet');
+  try {
+    const v = await post('/api/update/pruefen');
+    const st = await updatePruefen();          // berücksichtigt auch Updates, die schon auf dem PC liegen
+    if (st && (st.lokal || st.online || st.alt)) {
+      // Nur der Update-Hinweis – keine zweite Meldung
+      const pill = $('#updatePill'); pill.classList.remove('puls'); void pill.offsetWidth; pill.classList.add('puls');
+    } else if (!v.online_aktiv) toast('Online-Updates sind noch nicht eingerichtet');
     else if (v.fehler) toast('⚠️ ' + v.fehler);
-    else if (v.update) { toast(`✨ Version ${v.online} ist da!`); updatePruefen(); }
     else toast('👍 Du hast die neueste Version');
   } catch { toast('⚠️ Prüfen hat nicht geklappt'); }
-  b.textContent = 'Nach Updates suchen'; updatePruefen();
+  b.textContent = 'Nach Updates suchen';
 }
 async function neuStarten(){
   $('#restartOverlay').classList.add('show'); closeSheet();
@@ -1440,7 +1448,9 @@ async function updatePruefen(){
     $('#updatePill').innerHTML = alt ? '⚠️ Alte Version läuft – <b>Fenster schließen und „NEU_STARTEN.bat“ doppelklicken</b>'
       : online ? `✨ Update verfügbar (Version ${esc(v.online)}) – <b>Jetzt installieren</b>` : '✨ Update bereit – <b>Jetzt neu starten</b>';
     $('#updatePill').onclick = alt ? null : online ? updateInstallieren : neuStarten;
-    $('#updatePill').classList.toggle('show', alt || lokal || online);
+    const zeigen = alt || lokal || online;
+    $('#updatePill').classList.toggle('show', zeigen); document.body.classList.toggle('pill-an', zeigen);
+    return {alt, lokal, online};
     const vz = $('#appVersionZeile'); if (vz) vz.textContent = 'Version ' + v.version + (!v.online_aktiv ? ''
       : v.fehler ? ' · Update-Server nicht erreichbar' : !v.online ? ' · prüfe …' : v.update ? ` · Update ${v.online} verfügbar` : ' · aktuell ✓');
   } catch {}

@@ -1,6 +1,6 @@
 {
-  "version": "23",
-  "notiz": "Schmale Seitenleiste: kein eckiger Kasten mehr hinter dem aktiven Symbol (Dunkelmodus)",
+  "version": "24",
+  "notiz": "Nach Updates suchen: nur noch der Update-Hinweis, keine übereinanderliegenden Meldungen",
   "dateien": [
     "app.py",
     "1_installieren.bat",
