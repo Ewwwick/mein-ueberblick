@@ -1,6 +1,6 @@
 {
-  "version": "19",
-  "notiz": "Neue Datums-/Uhrzeitauswahl, Kalenderauswahl, Test-Eintrag",
+  "version": "20",
+  "notiz": "Smoother: weiche Seitenwechsel, kein Neuzeichnen ohne Änderung, sofortige Reaktion, federnde Animationen",
   "dateien": [
     "app.py",
     "1_installieren.bat",

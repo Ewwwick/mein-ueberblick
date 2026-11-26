@@ -380,7 +380,7 @@ body.glass::before{
     radial-gradient(40% 44% at 62% 78%, var(--w3), transparent 72%),
     radial-gradient(30% 34% at 25% 80%, var(--w4), transparent 70%),
     var(--wbase);
-  animation:lgDrift 38s ease-in-out infinite alternate;
+  animation:lgDrift 70s ease-in-out infinite alternate;
 }
 body.glass::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:transparent}
 html[data-theme="dark"] body.glass::after{background:rgba(0,0,0,.42)}
@@ -491,15 +491,15 @@ html[data-theme="dark"] body.glass .sb-item.on .badge{background:rgba(255,255,25
 /* ===== Mehr Liquid Glass: Lichtkugeln, Glaskanten, Lichtbrechung ===== */
 .orbs{display:none}
 body.glass .orbs{display:block;position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
-.orbs i{position:absolute;border-radius:50%;opacity:.9;animation:orbFloat 28s ease-in-out infinite alternate;
+.orbs i{position:absolute;border-radius:50%;opacity:.9;animation:orbFloat 45s ease-in-out infinite alternate;
   background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.95) 0%, var(--c) 38%, color-mix(in srgb,var(--c) 60%,transparent) 62%, transparent 72%)}
-.orbs i:nth-child(1){--c:var(--w1);width:300px;height:300px;left:22%;top:8%;animation-duration:31s}
-.orbs i:nth-child(2){--c:var(--w2);width:200px;height:200px;left:70%;top:52%;animation-duration:24s;animation-delay:-6s}
-.orbs i:nth-child(3){--c:var(--w3);width:380px;height:380px;left:48%;top:-10%;animation-duration:36s;animation-delay:-12s}
-.orbs i:nth-child(4){--c:var(--w4);width:160px;height:160px;left:30%;top:64%;animation-duration:22s;animation-delay:-3s}
-.orbs i:nth-child(5){--c:var(--w2);width:240px;height:240px;left:85%;top:6%;animation-duration:29s;animation-delay:-9s}
-.orbs i:nth-child(6){--c:var(--w1);width:120px;height:120px;left:58%;top:80%;animation-duration:20s;animation-delay:-15s}
-.orbs i:nth-child(7){--c:var(--w3);width:180px;height:180px;left:8%;top:40%;animation-duration:27s;animation-delay:-4s}
+.orbs i:nth-child(1){--c:var(--w1);width:300px;height:300px;left:22%;top:8%;animation-duration:52s}
+.orbs i:nth-child(2){--c:var(--w2);width:200px;height:200px;left:70%;top:52%;animation-duration:41s;animation-delay:-6s}
+.orbs i:nth-child(3){--c:var(--w3);width:380px;height:380px;left:48%;top:-10%;animation-duration:60s;animation-delay:-12s}
+.orbs i:nth-child(4){--c:var(--w4);width:160px;height:160px;left:30%;top:64%;animation-duration:38s;animation-delay:-3s}
+.orbs i:nth-child(5){--c:var(--w2);width:240px;height:240px;left:85%;top:6%;animation-duration:48s;animation-delay:-9s}
+.orbs i:nth-child(6){--c:var(--w1);width:120px;height:120px;left:58%;top:80%;animation-duration:34s;animation-delay:-15s}
+.orbs i:nth-child(7){--c:var(--w3);width:180px;height:180px;left:8%;top:40%;animation-duration:44s;animation-delay:-4s}
 @keyframes orbFloat{0%{transform:translate(0,0) scale(1)}33%{transform:translate(60px,-40px) scale(1.08)}66%{transform:translate(-50px,50px) scale(.94)}100%{transform:translate(30px,20px) scale(1.04)}}
 @media (prefers-reduced-motion: reduce){ .orbs i{animation:none} }
 html[data-theme="dark"] .orbs i{opacity:.75}
@@ -689,6 +689,34 @@ body.glass .wk-chips button.on{background:var(--blue)}
 .pmenu .tp-col button{width:100%;justify-content:center;padding:6px 0;font-variant-numeric:tabular-nums;font-size:16px;border-radius:8px}
 .pmenu .tp-col button.sel{background:var(--blue);color:#fff;font-weight:600}
 .pmenu .dp-schnell button.tp-ok{background:var(--blue);color:#fff;font-weight:600}
+
+/* ===== Smooth & entspannt ===== */
+::view-transition-old(root),::view-transition-new(root){animation-duration:.22s;animation-timing-function:cubic-bezier(.4,0,.2,1)}
+::view-transition-old(root){animation-name:vtAus}
+::view-transition-new(root){animation-name:vtEin}
+@keyframes vtAus{to{opacity:0;transform:scale(.995)}}
+@keyframes vtEin{from{opacity:0;transform:translateY(6px)}}
+button,.row.tap,.sb-item,.widget.tap,.chip,.nchip,.wk-chips button,.add-btn,.circle-btn,.link-btn{transition:transform .35s cubic-bezier(.34,1.56,.64,1), background-color .2s, color .2s, box-shadow .25s, opacity .2s}
+button:active:not(:disabled),.row.tap:active,.chip:active{transform:scale(.96)}
+.sb-item:active{transform:scale(.97)}
+.row{transition:background-color .18s}
+.check{transition:transform .35s cubic-bezier(.34,1.56,.64,1), background-color .2s, border-color .2s}
+.check.on{animation:ploppen .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes ploppen{0%{transform:scale(.6)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+.done .r-title{transition:color .3s}
+.sheet{transition:transform .55s cubic-bezier(.32,.72,0,1), visibility 0s .55s !important}
+.sheet.open{transition:transform .55s cubic-bezier(.32,.72,0,1) !important}
+.dim{transition:opacity .4s ease}
+.toast{transition:transform .5s cubic-bezier(.34,1.56,.64,1), opacity .3s}
+body.glass .toast{-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%)}
+.pmenu{animation-duration:.24s}
+.seg .thumb{transition:left .45s cubic-bezier(.34,1.3,.64,1), width .45s cubic-bezier(.34,1.3,.64,1)}
+.progress i{transition:width .6s cubic-bezier(.34,1.2,.64,1)}
+html{scroll-behavior:smooth}
+input,select,textarea{caret-color:var(--blue)}
+::selection{background:color-mix(in srgb,var(--blue) 30%,transparent)}
+:focus-visible{outline:2px solid color-mix(in srgb,var(--blue) 70%,transparent);outline-offset:2px;border-radius:8px}
+@media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important;transition-duration:.01ms !important} }
 </style>
 </head>
 <body class="glass" data-wall="ocean">
@@ -997,7 +1025,7 @@ function aufgabeRow(a, mitDatum=false, kompakt=false){
     const b2 = a.abgegeben ? '' : ueber ? `<span class="pill red">Überfällig</span>`
       : a.im_kalender ? (kompakt ? `<span class="pill blue" title="Im Apple-Kalender">${ICON.calCheck}</span>` : `<span class="pill blue">${ICON.calCheck} Im Kalender</span>`) : '';
     return `<div class="row ind ${a.abgegeben?'done':''}">
-      <button class="check ${a.abgegeben?'on':''}" title="Erledigt" onclick="haAktion('umschalten','${a.ha_id}')">${a.abgegeben?ICON.check:''}</button>
+      <button class="check ${a.abgegeben?'on':''}" title="Erledigt" onclick="haAktion('umschalten','${a.ha_id}', this)">${a.abgegeben?ICON.check:''}</button>
       <div class="icon-sq" style="background:${fachFarbe(a.klasse)};width:28px;height:28px;font-size:14px">✏️</div>
       <div class="r-main"><div class="r-title">${esc(a.titel)}</div><div class="r-sub" ${ueber?'style="color:var(--red)"':''}>${esc(sub)}</div></div>
       ${b2}<button class="trash" title="Löschen" onclick="haAktion('loeschen','${a.ha_id}')">${ICON.trash}</button></div>`;
@@ -1108,21 +1136,34 @@ function initSeg(el, value, onChange){
   btns.forEach(b => b.onclick = () => { value = b.dataset.v; place(); onChange(value); });
 }
 let switchT;
+function sanft(fn){
+  const ruhig = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (document.startViewTransition && !ruhig) { try { return document.startViewTransition(fn); } catch {} }
+  fn();
+}
 function setView(v){
   if (v === view) return;
   view = v; try { localStorage.setItem('seite', v); } catch {}
   document.body.classList.add('switching'); clearTimeout(switchT);
-  requestAnimationFrame(() => { render(); window.scrollTo({top:0}); switchT = setTimeout(() => document.body.classList.remove('switching'), 450); });
+  sanft(() => { render(); window.scrollTo({top:0}); });
+  switchT = setTimeout(() => document.body.classList.remove('switching'), 450);
 }
 function pickDay(iso){ selDay = startOfDay(new Date(iso)); render(); }
 function shiftWeek(n){ weekStart = addDays(weekStart, 7*n); selDay = addDays(selDay, 7*n); render(); }
 function goToday(){ selDay = startOfDay(new Date()); weekStart = mondayOf(new Date()); render(); }
 
 // ---------------- Daten laden ----------------
+let letzterStand = '';
+// Nur die "aktualisiert vor X Min."-Zeile auffrischen, ohne alles neu zu zeichnen
+function renderWidgetsLeise(){ document.querySelectorAll('.w-foot').forEach(el => { if (el.textContent.startsWith('Aktualisiert')) el.textContent = 'Aktualisiert ' + relTime(D.aktualisiert); }); }
 async function laden(){
   try {
     const r = await fetch('/api/daten'); const d = await r.json();
-    if (d.bereit) { D = d; render(); } else setTimeout(laden, 800);
+    if (d.bereit) {
+      const fp = JSON.stringify({...d, aktualisiert: 0, anmeldung: 0});
+      const neu = fp !== letzterStand; letzterStand = fp; D = d;
+      if (neu) render(); else { renderSidebar(); renderWidgetsLeise(); }
+    } else setTimeout(laden, 800);
     if (sheetOpen) updateSheetStatus();
   } catch (e) { toast('⚠️ Keine Verbindung zum Programm'); }
 }
@@ -1449,10 +1490,20 @@ function neueHausaufgabe(){
       $('#haTipp').textContent = `Nächste ${$('#haFach').value}-Stunde: ${longDate(parseTag(n.datum))}, ${n.zeit} Uhr – als Abgabe gesetzt.`; }
   });
 }
-async function haAktion(aktion, id){
+async function haAktion(aktion, id, el){
   if (aktion === 'loeschen' && !confirm('Hausaufgabe löschen? Sie wird auch aus dem Kalender entfernt.')) return;
-  await post('/api/hausaufgabe', {aktion, id});
-  await laden();
+  const a = (D.aufgaben || []).find(x => x.ha_id === id);
+  post('/api/hausaufgabe', {aktion, id}).then(() => setTimeout(laden, 900));   // im Hintergrund speichern
+  if (a && aktion === 'umschalten' && el && !a.abgegeben) {
+    // Haken erst kurz zeigen, dann sanft in "Erledigt" verschieben – wie bei iOS Erinnerungen
+    el.classList.add('on'); el.innerHTML = ICON.check; el.closest('.row')?.classList.add('done');
+    toast('✅ Erledigt – stark!');
+    setTimeout(() => { a.abgegeben = true; sanft(render); }, 650);
+    return;
+  }
+  if (a && aktion === 'umschalten') a.abgegeben = !a.abgegeben;
+  if (a && aktion === 'loeschen') D.aufgaben = D.aufgaben.filter(x => x !== a);
+  sanft(render);
 }
 
 // =====================================================================
@@ -2034,7 +2085,8 @@ function neueKlassenarbeit(){
 async function kaSchritt(id, i){
   const liste = JSON.parse(JSON.stringify(D.extras.klassenarbeiten)); const k = liste.find(x => x.id === id); if (!k) return;
   k.schritte[i].erledigt = !k.schritte[i].erledigt;
-  await extrasSpeichern('klassenarbeiten', liste); render();
+  D.extras.klassenarbeiten = liste; render();
+  extrasSpeichern('klassenarbeiten', liste);
   if (k.schritte.every(s => s.erledigt)) toast('🎉 Lernplan geschafft – du bist bereit!');
 }
 async function kaLoeschen(id){
