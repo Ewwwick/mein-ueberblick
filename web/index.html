@@ -746,6 +746,64 @@ input,select,textarea{caret-color:var(--blue)}
 body.pill-an .toast{bottom:88px}
 .update-pill.puls{animation:pillPuls .9s cubic-bezier(.34,1.56,.64,1)}
 @keyframes pillPuls{0%{transform:translate(-50%,0) scale(1)}35%{transform:translate(-50%,0) scale(1.08)}100%{transform:translate(-50%,0) scale(1)}}
+
+/* ===== Stundenplan – neuer Look ===== */
+.tt.tt2{--zb:rgba(255,255,255,.82);--zl:rgba(60,60,67,.09);border-radius:22px;padding:4px 8px 8px}
+html[data-theme="dark"] .tt.tt2{--zb:rgba(44,44,50,.78);--zl:rgba(255,255,255,.07)}
+body.glass .tt.tt2{background-color:rgba(255,255,255,.58);-webkit-backdrop-filter:blur(34px) saturate(170%);backdrop-filter:blur(34px) saturate(170%)}
+html[data-theme="dark"] body.glass .tt.tt2{background-color:rgba(18,19,28,.62)}
+.tt.tt2 > div{padding:4px;min-height:62px}
+.tt.tt2 .c{border:none;border-top:1px solid var(--zl);border-radius:0}
+.tt.tt2 .c:hover, body.glass .tt.tt2 .c:hover{background:transparent}
+.tt.tt2 .c.todaycol, body.glass .tt.tt2 .c.todaycol{background:color-mix(in srgb,var(--blue) 4%,transparent)}
+.tt.tt2 .nr{border:none;border-top:1px solid var(--zl);gap:1px}
+.tt.tt2 .nr b{font-size:17px;font-weight:700;line-height:1.1;margin-bottom:2px}
+.tt.tt2 .nr small{font-size:11px;color:var(--label2);font-variant-numeric:tabular-nums;line-height:1.25}
+.tt.tt2 .nr.jetzt b{color:var(--blue)}
+.tt.tt2 .nr:hover, body.glass .tt.tt2 .nr:hover{background:transparent}
+/* Tageskopf */
+.tt.tt2 .h{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 4px 10px;text-transform:none}
+.tt.tt2 .h .wd{font-size:12px;font-weight:600;color:var(--label2);text-transform:uppercase;letter-spacing:.04em}
+.tt.tt2 .h .dn{font-size:19px;font-weight:650;color:var(--label);width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.tt.tt2 .h.today .wd{color:var(--blue)}
+.tt.tt2 .h.today .dn{background:var(--blue);color:#fff;box-shadow:0 4px 14px color-mix(in srgb,var(--blue) 45%,transparent)}
+/* Fach-Kachel */
+.chip.ls{position:relative;background:color-mix(in srgb,var(--f) 17%,var(--zb, var(--card)));color:var(--label);padding:7px 8px 7px 14px;border-radius:12px;gap:1px;min-height:52px;
+  box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--f) 30%,transparent), 0 1px 2px rgba(0,0,0,.06);overflow:hidden;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .25s}
+.chip.ls::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:4px;border-radius:3px;background:var(--f)}
+.chip.ls b{color:var(--label);font-size:14px;font-weight:650;letter-spacing:-.01em}
+.chip.ls span{color:var(--label2);opacity:1;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip.ls .zl{display:flex;align-items:center;gap:6px;min-width:0}
+.chip.ls em{font-style:normal;flex:none;font-size:10.5px;font-weight:700;letter-spacing:.02em;padding:2px 7px;border-radius:99px;background:var(--f);color:#fff}
+.chip.ls:hover{transform:translateY(-1px) scale(1.02);box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--f) 45%,transparent), 0 6px 16px rgba(0,0,0,.12)}
+.chip.ls.u-vertretung,.chip.ls.u-pruefung{box-shadow:inset 0 0 0 1.5px var(--f), 0 1px 2px rgba(0,0,0,.06)}
+.chip.ls.u-entfall{background:repeating-linear-gradient(135deg, color-mix(in srgb,var(--f) 12%,var(--zb, var(--card))) 0 7px, color-mix(in srgb,var(--f) 6%,var(--zb, var(--card))) 7px 14px);
+  box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--f) 70%,transparent)}
+.chip.ls.u-entfall b{text-decoration:line-through;text-decoration-thickness:2px;text-decoration-color:var(--f);color:var(--label2)}
+.chip.ls.now{box-shadow:0 0 0 2.5px var(--blue), 0 6px 18px color-mix(in srgb,var(--blue) 35%,transparent)}
+.chip.ls.now::after{content:"JETZT";position:absolute;top:6px;right:6px;font-size:9px;font-weight:800;letter-spacing:.06em;color:var(--blue)}
+.tt.tt2 .c .multi{gap:4px}
+.tt.tt2 .c .multi .chip.ls{padding:6px 5px 6px 12px;min-height:52px}
+.tt.tt2 .c .multi .chip.ls::before{left:4px;width:3.5px}
+.tt.tt2 .c .multi .chip.ls b{font-size:12.5px}
+.tt.tt2 .c .multi .chip.ls span{font-size:11px}
+.tt.tt2 .c .multi .chip.ls.now::after{display:none}
+/* Legende */
+.u-legende{gap:8px;margin-top:14px}
+.u-legende span{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:99px;background:var(--fill);font-weight:500}
+body.glass .u-legende span{background:var(--glass);-webkit-backdrop-filter:blur(var(--gb));backdrop-filter:blur(var(--gb))}
+.u-legende i{width:9px;height:9px;border-radius:50%;margin:0;background:var(--f)}
+.u-legende b{font-size:11.5px;font-weight:700;color:#fff;background:var(--f);border-radius:99px;padding:1px 7px;margin-left:2px}
+.u-legende span.hat{color:var(--label)}
+/* Wochen-Auswahl als eine ruhige Leiste */
+.wk-chips{overflow:visible;padding:0;margin:0 0 16px}
+.wk-chips .wk-in{display:inline-flex;gap:2px;padding:4px;border-radius:18px;background:var(--fill);max-width:100%;overflow-x:auto;scrollbar-width:none}
+body.glass .wk-chips .wk-in{background:var(--glass);-webkit-backdrop-filter:blur(var(--gb)) saturate(180%);backdrop-filter:blur(var(--gb)) saturate(180%);box-shadow:inset 0 1px 1px var(--glass-edge)}
+.wk-chips button, body.glass .wk-chips button{background:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;padding:6px 14px;border-radius:14px;min-width:78px}
+.wk-chips button:hover, body.glass .wk-chips button:hover{background:color-mix(in srgb,var(--label) 7%,transparent)}
+.wk-chips button.on, body.glass .wk-chips button.on{background:var(--blue);color:#fff;box-shadow:0 3px 10px color-mix(in srgb,var(--blue) 40%,transparent)}
+@media (max-width:1000px){ .tt.tt2{padding:2px 4px 6px} .tt.tt2 .h .dn{font-size:17px;width:30px;height:30px} .chip.ls{padding-left:12px} .chip.ls::before{left:4px} }
 </style>
 </head>
 <body class="glass" data-wall="ocean">
@@ -1615,14 +1673,15 @@ function renderStundenplan(){
 function renderEigenerPlan(){
   const ex = D.extras, now = new Date(), wd = (now.getDay()+6)%7+1;
   const s = stundeInfo(); const jetztI = s?.jetzt ? s.jetzt.i : -1;
-  let html = `<div class="tt" style="grid-template-columns:78px repeat(5,1fr)"><div class="h"></div>
-    ${WTAGE.map((t,i) => `<div class="h ${i+1===wd?'today':''}">${t.slice(0,2)}</div>`).join('')}`;
+  const mo = mondayOf(now);
+  let html = `<div class="tt tt2" style="grid-template-columns:70px repeat(5,1fr)"><div class="h"></div>
+    ${WTAGE.slice(0,5).map((t,i) => ttKopf(addDays(mo, i), i+1===wd)).join('')}`;
   ex.stunden.forEach((st, i) => {
-    html += `<div class="nr" onclick="stundeZeitBearbeiten(${i})" title="Zeiten ändern"><b>${i+1}.</b>${st.von}<br>${st.bis}</div>`;
+    html += `<div class="nr ${i===jetztI && wd<=5 ? 'jetzt' : ''}" onclick="stundeZeitBearbeiten(${i})" title="Zeiten ändern"><b>${i+1}</b><small>${st.von}</small><small>${st.bis}</small></div>`;
     for (let t = 1; t <= 5; t++){
       const z = (ex.plan[String(t)] || {})[String(i)];
       html += `<div class="c ${t===wd?'todaycol':''}" onclick="zelleBearbeiten(${t},${i})">${z
-        ? `<div class="chip ${t===wd && i===jetztI ? 'now':''}" style="background:color-mix(in srgb,${fachFarbe(z.fach)} 18%,transparent);color:${fachFarbe(z.fach)}"><b>${esc(z.fach)}</b>${z.raum?`<span>${esc(z.raum)}</span>`:''}</div>`
+        ? `<div class="chip ls ${t===wd && i===jetztI ? 'now':''}" style="--f:${fachFarbe(z.fach)}"><b>${esc(z.fach)}</b>${z.raum?`<span>${esc(z.raum)}</span>`:''}</div>`
         : `<div class="plus">+</div>`}</div>`;
     }
   });
@@ -2355,8 +2414,8 @@ function renderUntisWoche(){
     <div class="cal-nav"><button class="today-btn" onclick="untisOffset=0;render()">Heute</button>
     <button class="circle-btn" onclick="untisOffset--;render()">${ICON.left}</button><button class="circle-btn" onclick="untisOffset++;render()">${ICON.right}</button></div></div>`;
   // Wochenauswahl: diese Woche bis in 5 Wochen
-  const chips = `<div class="wk-chips">${[0,1,2,3,4,5].map(o => { const m = addDays(mondayOf(new Date()), o * 7);
-      return `<button class="${o === untisOffset ? 'on' : ''}" onclick="untisOffset=${o};render()"><b>${o === 0 ? 'Diese Woche' : o === 1 ? 'Nächste' : 'KW ' + kw(m)}</b><span>${m.toLocaleDateString(DE,{day:'numeric',month:'short'})}</span></button>`; }).join('')}</div>`;
+  const chips = `<div class="wk-chips"><div class="wk-in">${[0,1,2,3,4,5].map(o => { const m = addDays(mondayOf(new Date()), o * 7);
+      return `<button class="${o === untisOffset ? 'on' : ''}" onclick="untisOffset=${o};render()"><b>${o === 0 ? 'Diese Woche' : o === 1 ? 'Nächste' : 'KW ' + kw(m)}</b><span>${m.toLocaleDateString(DE,{day:'numeric',month:'short'})}</span></button>`; }).join('')}</div></div>`;
   // die nächsten Wochen schon im Hintergrund laden
   setTimeout(() => { for (let o = Math.max(2, untisOffset); o <= untisOffset + 2; o++) untisWoche(o); }, 400);
   if (w.laden) return kopf + chips + `<div class="empty">Lade Stundenplan aus Untis …</div>`;
@@ -2367,10 +2426,11 @@ function renderUntisWoche(){
   const erste = belegt.indexOf(true), letzte = belegt.lastIndexOf(true);
   if (erste >= 0) raster = raster.slice(erste, letzte + 1);
   untisLetzteWoche = w.stunden;
-  let html = `<div class="tt" style="grid-template-columns:78px repeat(5,1fr)"><div class="h"></div>
-    ${tage.map(d => `<div class="h ${sameDay(d, heute) ? 'today' : ''}">${d.toLocaleDateString(DE,{weekday:'short'}).replace('.','')} <span style="font-weight:500">${d.getDate()}.</span></div>`).join('')}`;
+  let html = `<div class="tt tt2" style="grid-template-columns:70px repeat(5,1fr)"><div class="h"></div>
+    ${tage.map(d => ttKopf(d, sameDay(d, heute))).join('')}`;
   raster.forEach((u, ri) => {
-    html += `<div class="nr"><b>${esc(u.nr || String(erste + ri + 1))}.</b>${u.von}<br>${u.bis}</div>`;
+    const jetztZeile = untisOffset === 0 && zuDate(u.von) <= heute && heute < zuDate(u.bis) && heute.getDay() >= 1 && heute.getDay() <= 5;
+    html += `<div class="nr ${jetztZeile ? 'jetzt' : ''}"><b>${esc(u.nr || String(erste + ri + 1))}</b><small>${u.von}</small><small>${u.bis}</small></div>`;
     tage.forEach(d => {
       const iso = isoTag(d), gesehen = new Set();
       const ls = w.stunden.filter(l => l.datum === iso && l.von <= u.von && u.von < l.bis)
@@ -2378,16 +2438,19 @@ function renderUntisWoche(){
       const jetzt = sameDay(d, heute) && zuDate(u.von) <= heute && heute < zuDate(u.bis);
       html += `<div class="c ${sameDay(d, heute) ? 'todaycol' : ''}">${ls.length > 1 ? '<div class="multi">' : ''}${ls.map(l => {
         const st = UNTIS_STATUS[l.status] || UNTIS_STATUS.normal, idx = w.stunden.indexOf(l), farbe = st.farbe || fachFarbe(l.fach);
-        return `<div class="chip u-${l.status} ${jetzt ? 'now' : ''}" onclick="untisDetails(${idx})" title="${esc(l.fach_lang || l.fach)}"
-          style="background:color-mix(in srgb,${farbe} ${l.status === 'normal' ? 16 : 22}%,transparent);color:${farbe}">
-          <b>${esc(ls.length === 1 && l.fach_lang && l.fach_lang.length <= 11 ? l.fach_lang : l.fach)}</b><span>${st.txt ? st.txt + (l.raum ? ' · ' : '') : ''}${esc(l.raum || '')}</span></div>`; }).join('')}${ls.length > 1 ? '</div>' : ''}</div>`;
+        const name = ls.length === 1 && l.fach_lang && l.fach_lang.length <= 13 ? l.fach_lang : l.fach;
+        return `<div class="chip ls u-${l.status} ${jetzt && l.status !== 'entfall' ? 'now' : ''}" onclick="untisDetails(${idx})" title="${esc(l.fach_lang || l.fach)}${l.raum ? ' · ' + esc(l.raum) : ''}" style="--f:${farbe}">
+          <b>${esc(name)}</b>${l.raum || (st.txt && ls.length === 1) ? `<div class="zl">${l.raum ? `<span>${esc(l.raum)}</span>` : ''}${st.txt && ls.length === 1 ? `<em>${st.txt}</em>` : ''}</div>` : ''}</div>`; }).join('')}${ls.length > 1 ? '</div>' : ''}</div>`;
     });
   });
   html += `</div>`;
   const n = (s) => w.stunden.filter(l => l.status === s).length;
-  const legende = `<div class="u-legende"><span><i style="background:var(--orange)"></i>Vertretung/Raum ${n('vertretung') ? '(' + n('vertretung') + ')' : ''}</span>
-    <span><i style="background:var(--red)"></i>Entfall ${n('entfall') ? '(' + n('entfall') + ')' : ''}</span><span><i style="background:var(--purple)"></i>Prüfung ${n('pruefung') ? '(' + n('pruefung') + ')' : ''}</span></div>`;
+  const lg = (s, f, t) => `<span class="${n(s) ? 'hat' : ''}" style="--f:${f}"><i></i>${t}${n(s) ? `<b>${n(s)}</b>` : ''}</span>`;
+  const legende = `<div class="u-legende">${lg('vertretung', 'var(--orange)', 'Vertretung / Raum')}${lg('entfall', 'var(--red)', 'Entfall')}${lg('pruefung', 'var(--purple)', 'Prüfung')}</div>`;
   return kopf + chips + (w.stunden.length ? html + legende : emptyBox('🌴', 'Kein Unterricht', 'In dieser Woche steht nichts im Untis-Stundenplan – vielleicht Ferien?'));
+}
+function ttKopf(d, heute){
+  return `<div class="h ${heute ? 'today' : ''}"><span class="wd">${d.toLocaleDateString(DE,{weekday:'short'}).replace('.','')}</span><span class="dn">${d.getDate()}</span></div>`;
 }
 function untisDetails(i){
   const l = untisLetzteWoche[i]; if (!l) return;

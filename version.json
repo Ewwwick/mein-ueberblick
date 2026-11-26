@@ -1,6 +1,6 @@
 {
-  "version": "24",
-  "notiz": "Nach Updates suchen: nur noch der Update-Hinweis, keine übereinanderliegenden Meldungen",
+  "version": "25",
+  "notiz": "Neuer Stundenplan-Look: klare Schrift, Farbstreifen, Status-Badges, ruhigere Tabelle",
   "dateien": [
     "app.py",
     "1_installieren.bat",
