@@ -35,7 +35,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 # Grundeinstellungen
 # --------------------------------------------------------------------------
 APP_NAME = "Mein Überblick"
-APP_VERSION = "25"
+APP_VERSION = "26"
 
 # Online-Updates: Hier liegt die neueste Version (öffentliches GitHub-Repository "besitzer/name").
 # Leer = keine Online-Updates.
@@ -55,6 +55,7 @@ TOKEN_FILE = os.path.join(DATA_DIR, "microsoft_anmeldung.bin")
 LOG_FILE = os.path.join(DATA_DIR, "protokoll.txt")
 HA_FILE = os.path.join(DATA_DIR, "hausaufgaben.json")
 EXTRAS_FILE = os.path.join(DATA_DIR, "extras.json")
+HINTERGRUND_FILE = os.path.join(DATA_DIR, "hintergrund.jpg")
 
 KEYRING_SERVICE = "MeinUeberblick-iCloud"
 GRAPH = "https://graph.microsoft.com/v1.0"
@@ -173,6 +174,7 @@ def extras_laden(demo=False):
     e.setdefault("gewicht_schriftlich", 50)
     e.setdefault("klassenarbeiten", [])
     e.setdefault("notizen", [])
+    e.setdefault("karten", [])
     e.setdefault("widgets", {"reihenfolge": [], "aus": []})
     if demo and not e["plan"]:
         woche = {
@@ -1048,6 +1050,11 @@ class Handler(BaseHTTPRequestHandler):
         if pfad in statisch:
             with open(os.path.join(WEB_DIR, pfad.lstrip("/")), "rb") as f:
                 return self._antwort(200, f.read(), statisch[pfad])
+        if pfad == "/hintergrund.jpg":
+            if not os.path.exists(HINTERGRUND_FILE):
+                return self._antwort(404, {"fehler": "kein Bild"})
+            with open(HINTERGRUND_FILE, "rb") as f:
+                return self._antwort(200, f.read(), "image/jpeg")
         if pfad == "/manifest.json":
             m = {"id": "/", "name": APP_NAME, "short_name": APP_NAME, "start_url": "/", "scope": "/",
                  "display": "standalone", "display_override": ["window-controls-overlay", "standalone"],
@@ -1168,6 +1175,29 @@ class Handler(BaseHTTPRequestHandler):
             e["stunden"], e["plan"] = stunden or e["stunden"], plan
             json_speichern(EXTRAS_FILE, e)
             return self._antwort(200, {"ok": True})
+        if pfad == "/api/hintergrund":
+            if body.get("loeschen"):
+                try:
+                    os.remove(HINTERGRUND_FILE)
+                except FileNotFoundError:
+                    pass
+                return self._antwort(200, {"ok": True})
+            bild = str(body.get("bild") or "")
+            kopf = "data:image/jpeg;base64,"
+            if not bild.startswith(kopf):
+                return self._antwort(400, {"fehler": "Kein JPEG-Bild"})
+            try:
+                roh = base64.b64decode(bild[len(kopf):], validate=True)
+            except Exception:
+                return self._antwort(400, {"fehler": "Bild kaputt"})
+            if not roh.startswith(b"\xff\xd8\xff") or len(roh) > 8 * 1024 * 1024:
+                return self._antwort(400, {"fehler": "Bild zu groß oder kein JPEG"})
+            os.makedirs(DATA_DIR, exist_ok=True)
+            tmp = HINTERGRUND_FILE + ".tmp"
+            with open(tmp, "wb") as f:
+                f.write(roh)
+            os.replace(tmp, HINTERGRUND_FILE)
+            return self._antwort(200, {"ok": True})
         if pfad == "/api/extras":
             e = extras_laden()
             k, w = body.get("key"), body.get("wert")
@@ -1206,6 +1236,26 @@ class Handler(BaseHTTPRequestHandler):
                 e["notizen"] = [{"id": text(n.get("id"), 20) or uuid.uuid4().hex[:10], "text": str(n.get("text") or "")[:2000],
                                  "farbe": n.get("farbe") if n.get("farbe") in ("gelb", "pink", "blau", "gruen", "lila", "glas") else "gelb",
                                  "erstellt": text(n.get("erstellt"), 40)} for n in w[:60] if isinstance(n, dict)]
+            elif k == "karten" and isinstance(w, list):
+                heute = dt.date.today().isoformat()
+                karten = []
+                for c in w[:3000]:
+                    if not isinstance(c, dict):
+                        continue
+                    vorne, hinten = str(c.get("v") or "").strip()[:500], str(c.get("h") or "").strip()[:500]
+                    if not vorne and not hinten:
+                        continue
+                    try:
+                        box = min(5, max(1, int(c.get("box") or 1)))
+                    except Exception:
+                        box = 1
+                    try:
+                        r, f = max(0, int(c.get("r") or 0)), max(0, int(c.get("f") or 0))
+                    except Exception:
+                        r, f = 0, 0
+                    karten.append({"id": text(c.get("id"), 20) or uuid.uuid4().hex[:10], "fach": text(c.get("fach"), 30) or "Allgemein",
+                                   "v": vorne, "h": hinten, "box": box, "faellig": datum_ok(c.get("faellig")) or heute, "r": r, "f": f})
+                e["karten"] = karten
             elif k == "widgets" and isinstance(w, dict):
                 e["widgets"] = {"reihenfolge": [text(x, 20) for x in (w.get("reihenfolge") or [])][:20],
                                 "aus": [text(x, 20) for x in (w.get("aus") or [])][:20]}

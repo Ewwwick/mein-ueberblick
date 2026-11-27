@@ -1,6 +1,6 @@
 {
-  "version": "25",
-  "notiz": "Neuer Stundenplan-Look: klare Schrift, Farbstreifen, Status-Badges, ruhigere Tabelle",
+  "version": "26",
+  "notiz": "Neu: Karteikarten mit Lernmodus + bewegte Hintergründe (Lava, Nordlicht, Galaxie) und eigenes Hintergrundbild",
   "dateien": [
     "app.py",
     "1_installieren.bat",
